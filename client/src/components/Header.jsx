@@ -1,6 +1,5 @@
 import React, { useState } from 'react'
 import logo from '../assets/logo.png'
-import Search from './Search'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { FaRegCircleUser } from "react-icons/fa6";
 import useMobile from '../hooks/useMobile';
@@ -38,7 +37,7 @@ const Header = () => {
             {
                 !(isSearchPage && isMobile) && (
                     <div className='container mx-auto flex items-center px-2 justify-between'>
-                        {/**logo */}
+                        {/**logo */} 
                         <div className='h-full'>
                             <Link to={"/"} className='h-full flex justify-center items-center'>
                                 <img
@@ -58,19 +57,14 @@ const Header = () => {
                             </Link>
                         </div>
 
-                        {/**Search */}
-                        <div className='hidden lg:block'>
-                            <Search />
-                        </div>
-
-                        {/**login */}
+                        {/**login */} 
                         <div className=''>
                             {/**user icons display in only mobile version**/}
                             <button className='text-neutral-600 lg:hidden' onClick={handleMobileUser}>
                                 <FaRegCircleUser size={26} />
                             </button>
 
-                            {/**Desktop*/}
+                            {/**Desktop*/} 
                             <div className='hidden lg:flex  items-center gap-10'>
                                 {
                                     user?._id ? (
@@ -84,7 +78,6 @@ const Header = () => {
                                                         <GoTriangleDown size={25} />
                                                     )
                                                 }
-
                                             </div>
                                             {
                                                 openUserMenu && (
@@ -107,9 +100,7 @@ const Header = () => {
                 )
             }
 
-            <div className='container mx-auto px-2 lg:hidden'>
-                <Search />
-            </div>
+            {/* Removed Search Section for mobile */}
         </header>
     )
 }
