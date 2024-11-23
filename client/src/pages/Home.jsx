@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Home = () => {
-  // Return an empty fragment for a blank page
-  return <></>;
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Redirect to /dashboard/adminpanel when Home is loaded
+    navigate("/dashboard/adminpanel");
+  }, [navigate]);
+
+  return null; // No UI needed for redirection
 };
 
 export default Home;
