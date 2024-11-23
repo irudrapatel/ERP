@@ -1,8 +1,6 @@
 import mongoose from "mongoose";
 import DamageProduct from "../models/damageproduct.model.js";
 import ProductModel from "../models/product.model.js";
-import CategoryModel from "../models/category.model.js"; // Ensure Category is imported
-import SubCategoryModel from "../models/subCategory.model.js"; // Ensure SubCategory is imported
 
 // Handle Damage Product (Add New Boxes Only)
 export const handleDamageProduct = async (req, res) => {
@@ -85,17 +83,12 @@ export const handleDamageProduct = async (req, res) => {
 export const getDamageProducts = async (req, res) => {
   try {
     const damageProducts = await DamageProduct.find()
-      .populate("category", "name") // Ensure 'name' exists in Category
-      .populate("subCategory", "name"); // Ensure 'name' exists in SubCategory
+      .populate("category", "name")
+      .populate("subCategory", "name");
 
     res.status(200).json({ success: true, data: damageProducts });
   } catch (error) {
-    console.error("Error fetching damaged products:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to fetch Damaged Products",
-      error: error.message, // Include the error message in the response for debugging
-    });
+    console.error("Error fetching damaged products:", error.message, error.stack);
+    res.status(500).json({ success: false, message: "Failed to fetch Damaged Products", error });
   }
 };
-
