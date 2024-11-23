@@ -76,13 +76,10 @@ const UploadProduct = () => {
   
 
   return (
-    <section>
-      {/* Start Section */}
-      <div className="p-2 bg-white shadow-md flex items-center justify-between">
-        <h2 className="font-semibold">Inward</h2>
-      </div>
-      <div className="grid p-3">
-        <form className="grid gap-4" onSubmit={handleSubmit}>
+    <section className="bg-white">
+      <div className="container mx-auto p-4">
+      <h2 className="font-semibold text-lg mb-4">Outward Product</h2>
+        <form className="grid gap-4 bg-gray-50 p-6 rounded shadow" onSubmit={handleSubmit}>
           {/* Select Category */}
           <div className="grid gap-1">
             <label className="font-medium">Camera Category</label>
@@ -196,7 +193,7 @@ const UploadProduct = () => {
 
 
           {/* Submit */}
-          <button className="bg-primary-100 hover:bg-primary-200 py-2 rounded font-semibold">
+          <button className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
             Submit
           </button>
         </form>
