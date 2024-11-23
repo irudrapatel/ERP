@@ -4,6 +4,7 @@ import Axios from "../utils/Axios";
 import SummaryApi from "../common/SummaryApi";
 import AxiosToastError from "../utils/AxiosToastError";
 import successAlert from "../utils/SuccessAlert";
+import { combineBoxes } from '../utils'; // Only import the combineBoxes function
 
 const OutProduct = () => {
   const allCategory = useSelector((state) => state.product.allCategory);
@@ -32,39 +33,36 @@ const OutProduct = () => {
     }
   }, [data.category, allSubCategory]);
 
-// Fetch boxes for the selected subcategory
-useEffect(() => {
-  if (data.category && data.subCategory) {
-    const fetchBoxes = async () => {
-      try {
-        const response = await Axios({
-          ...SummaryApi.getProductByCategoryAndSubCategory,
-          data: { categoryId: data.category, subCategoryId: data.subCategory },
-        });
+  // Fetch boxes for the selected subcategory
+  useEffect(() => {
+    if (data.category && data.subCategory) {
+      const fetchBoxes = async () => {
+        try {
+          const response = await Axios({
+            ...SummaryApi.getProductByCategoryAndSubCategory,
+            data: { categoryId: data.category, subCategoryId: data.subCategory },
+          });
 
-        if (response.data.success) {
-          console.log("Fetched Products:", response.data.data); // Debug log
-          const boxes = response.data.data
-            .map((product) => product.boxes)
-            .flat();
-
-          console.log("Filtered Boxes:", boxes); // Debug log
-          setFilteredBoxes(boxes);
-        } else {
-          console.error("No products found for subcategory.");
-          setFilteredBoxes([]); // No products found
+          if (response.data.success) {
+            const boxes = response.data.data
+              .map((product) => product.boxes)
+              .flat();
+            setFilteredBoxes(combineBoxes(boxes)); // Use combineBoxes here
+          } else {
+            console.error("No products found for subcategory.");
+            setFilteredBoxes([]);
+          }
+        } catch (error) {
+          console.error("Error fetching boxes:", error);
+          AxiosToastError(error);
         }
-      } catch (error) {
-        console.error("Error fetching boxes:", error);
-        AxiosToastError(error);
-      }
-    };
+      };
 
-    fetchBoxes();
-  } else {
-    setFilteredBoxes([]); // Clear boxes if no subcategory is selected
-  }
-}, [data.category, data.subCategory]);
+      fetchBoxes();
+    } else {
+      setFilteredBoxes([]);
+    }
+  }, [data.category, data.subCategory]);
 
   // Update quantity display for the selected box
   useEffect(() => {

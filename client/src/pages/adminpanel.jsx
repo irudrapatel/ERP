@@ -3,6 +3,8 @@ import { useSelector } from 'react-redux';
 import isAdmin from '../utils/isAdmin';
 import Axios from '../utils/Axios';
 import SummaryApi from '../common/SummaryApi';
+import { combineBoxes } from '../utils';
+
 
 const Dashboard = () => {
   const user = useSelector((state) => state.user);
@@ -54,7 +56,8 @@ const Dashboard = () => {
       product.boxes.map((box) => ({
         boxNo: box.boxNo,
         partsQty: box.partsQty,
-        dateAdded: product.updatedAt, // Fetch the updatedAt field directly from the product
+        action: box.partsQty > 0 ? "Add" : "Out", // Add logic for action
+        dateAdded: product.updatedAt,// Fetch the updatedAt field directly from the product
       }))
     );
 
@@ -171,11 +174,12 @@ const Dashboard = () => {
                   <tr className="bg-gray-100">
                     <th className="border border-gray-300 px-4 py-2">Box No.</th>
                     <th className="border border-gray-300 px-4 py-2">Parts Qty</th>
+                    {/* <th className="border border-gray-300 px-4 py-2">Action</th> */}
                     <th className="border border-gray-300 px-4 py-2">Date</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedDetails.map((box, index) => (
+                  {combineBoxes(selectedDetails).map((box, index) => (
                     <tr key={index} className="text-center">
                       <td className="border border-gray-300 px-4 py-2">{box.boxNo}</td>
                       <td className="border border-gray-300 px-4 py-2">{box.partsQty}</td>
@@ -185,6 +189,7 @@ const Dashboard = () => {
                     </tr>
                   ))}
                 </tbody>
+
               </table>
               <button
                 className="mt-4 bg-blue-500 text-white py-2 px-4 rounded"
