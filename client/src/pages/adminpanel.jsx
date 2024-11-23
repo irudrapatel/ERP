@@ -78,6 +78,32 @@ const Dashboard = () => {
     return { totalBoxes, totalPartsQty, detailedBoxes };
   };
 
+
+  const calculatePossibleCameras = (categoryId) => {
+    // Filter subcategories under the current category
+    const relatedSubCategories = subCategories.filter((sub) =>
+      sub.category.some((cat) => cat._id === categoryId)
+    );
+  
+    if (relatedSubCategories.length === 0) return 0;
+  
+    // Calculate possible cameras for each subcategory
+    const cameraCounts = relatedSubCategories.map((sub) => {
+      // Fetch the total parts available for the subcategory
+      const totalPartsAvailable = getSubCategoryData(sub._id).totalPartsQty;
+  
+      // Fetch partsPerCamera from the subcategory
+      const partsPerCamera = sub.partsPerCamera || 1;
+  
+      // Calculate possible cameras for this subcategory
+      return Math.floor(totalPartsAvailable / partsPerCamera);
+    });
+  
+    // The minimum count across all subcategories determines the total possible cameras
+    return Math.min(...cameraCounts);
+  };
+  
+
   // Helper to calculate total damaged parts for a subcategory
   const getTotalDamagedParts = (subCategoryId) => {
     const damagedData = damagedProducts.filter(
@@ -107,22 +133,28 @@ const Dashboard = () => {
       <div className="container mx-auto p-3">
         {/* Stat Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-          {["Total Cameras", "Total Box", "Today Summary", "Live Projects"].map((title, index) => (
-            <div key={index} className="bg-white shadow rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <h3 className="text-gray-600 text-sm font-semibold">{title.toUpperCase()}</h3>
-                <span
-                  className={`p-2 rounded-full ${
-                    ["bg-blue-500", "bg-green-500", "bg-orange-500", "bg-purple-500"][index]
-                  } text-white text-sm`}
-                >
-                  $
-                </span>
+          {categories.map((category) => {
+            const possibleCameras = calculatePossibleCameras(category._id);
+            return (
+              <div key={category._id} className="bg-white shadow rounded-lg p-4">
+                <div className="flex items-center justify-center mb-4">
+                  {/* Category Image */}
+                  <img
+                    src={category.image}
+                    alt={category.name}
+                    className="w-16 h-16 object-cover" // Removed `rounded-full`
+                  />
+                </div>
+                <h3 className="text-gray-600 text-center font-semibold text-lg mb-2">
+                  {category.name}
+                </h3>
+                <p className="text-center text-sm text-gray-500">
+                  Possible Cameras:{" "}
+                  <span className="text-blue-500 font-bold text-xl">{possibleCameras}</span>
+                </p>
               </div>
-              <h2 className="mt-2 text-3xl font-bold">79352</h2>
-              <p className="text-sm text-gray-500">55539</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Category Filter */}
