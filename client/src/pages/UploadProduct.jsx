@@ -78,7 +78,11 @@ const UploadProduct = () => {
   return (
     <section className="bg-white">
       <div className="container mx-auto p-4">
+<<<<<<< HEAD
       <h2 className="font-semibold text-lg mb-4">Inward Camera Part</h2>
+=======
+      <h2 className="font-semibold text-lg mb-4">Outward Product</h2>
+>>>>>>> 7727a9d9213337e566c643a797f4cc59495e007c
         <form className="grid gap-4 bg-gray-50 p-6 rounded shadow" onSubmit={handleSubmit}>
           {/* Select Category */}
           <div className="grid gap-1">
