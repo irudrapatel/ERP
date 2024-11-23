@@ -199,8 +199,8 @@ const Dashboard = () => {
                       onClick={() => setSelectedDetails(detailedBoxes)}
                     >
                       <p>Code: {sub.code}</p>
-                      <p>Total Boxes: {totalBoxes}</p>
-                      <p>Total Parts Qty: {totalPartsQty}</p>
+                      <p>Total Available Boxes: {totalBoxes}</p>
+                      <p>Total Available Parts Qty: {totalPartsQty}</p>
                       <p>Total Damaged Parts: {totalDamagedParts}</p> {/* New line */}
                     </div>
                   </div>
