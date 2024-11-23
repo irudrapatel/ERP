@@ -1,0 +1,14 @@
+import mongoose from 'mongoose';
+
+const damageProductSchema = new mongoose.Schema(
+  {
+    category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
+    subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'SubCategory', required: true },
+    boxNo: { type: String, required: true }, // Store boxNo as string for flexibility
+    quantity: { type: Number, required: true },
+    action: { type: String, enum: ['Add', 'Out'], required: true }, // Action: Add or Out
+  },
+  { timestamps: true }
+);
+
+export default mongoose.model('DamageProduct', damageProductSchema);

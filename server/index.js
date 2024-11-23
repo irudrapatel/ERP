@@ -15,6 +15,7 @@ import cartRouter from './route/cart.route.js'
 import addressRouter from './route/address.route.js'
 import orderRouter from './route/order.route.js'
 import outProductRouter from './route/outproduct.route.js'
+import damageProductRouter from './route/damageproduct.route.js'; // Import the new route
 
 const app = express()
 app.use(cors({
@@ -46,6 +47,7 @@ app.use("/api/cart",cartRouter)
 app.use("/api/address",addressRouter)
 app.use('/api/order',orderRouter)
 app.use('/api/outproduct', outProductRouter);
+app.use('/api/damageproduct', damageProductRouter); // Add route for Damage Product
 
 connectDB().then(()=>{
     app.listen(PORT,()=>{

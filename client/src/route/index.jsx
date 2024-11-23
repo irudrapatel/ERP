@@ -24,6 +24,7 @@ import Success from "../pages/Success";
 import Cancel from "../pages/Cancel";
 import Adminpanel from "../pages/adminpanel";
 import OutProduct from "../pages/OutProduct"; // Import OutProduct page
+import DamageProduct from "../pages/DamageProduct"; // Import DamageProduct component
 
 const router = createBrowserRouter([
   {
@@ -79,6 +80,14 @@ const router = createBrowserRouter([
             element: (
               <AdminPermision>
                 <CategoryPage />
+              </AdminPermision>
+            ),
+          },
+          {
+            path: "damage-product",
+            element: (
+              <AdminPermision>
+                <DamageProduct />
               </AdminPermision>
             ),
           },
