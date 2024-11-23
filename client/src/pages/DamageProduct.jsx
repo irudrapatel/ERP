@@ -12,7 +12,7 @@ const DamageProduct = () => {
   const [data, setData] = useState({
     category: "",
     subCategory: "",
-    boxes: [], // Manually added boxes
+    boxes: [], // Multiple boxes for add/out operations
     action: "Add", // Default action
   });
 
@@ -38,10 +38,7 @@ const DamageProduct = () => {
   const handleBoxChange = (index, field, value) => {
     const updatedBoxes = [...data.boxes];
     updatedBoxes[index][field] = value;
-    setData((prev) => ({
-      ...prev,
-      boxes: updatedBoxes,
-    }));
+    setData((prev) => ({ ...prev, boxes: updatedBoxes }));
   };
 
   const handleSubmit = async (e) => {
@@ -124,9 +121,7 @@ const DamageProduct = () => {
                   type="number"
                   placeholder="Parts Qty"
                   value={box.partsQty}
-                  onChange={(e) =>
-                    handleBoxChange(index, "partsQty", e.target.value)
-                  }
+                  onChange={(e) => handleBoxChange(index, "partsQty", e.target.value)}
                   className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
                 />
               </div>
