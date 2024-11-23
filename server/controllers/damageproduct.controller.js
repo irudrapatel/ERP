@@ -4,7 +4,9 @@ import ProductModel from "../models/product.model.js";
 
 export const handleDamageProduct = async (req, res) => {
   try {
-    const { category, subCategory, boxes } = req.body;
+    const { category, subCategory, boxes, action } = req.body;
+
+    console.log("Received request body:", req.body);
 
     if (!mongoose.Types.ObjectId.isValid(category) || !mongoose.Types.ObjectId.isValid(subCategory)) {
       return res.status(400).json({ success: false, message: "Invalid Category or SubCategory IDs" });
@@ -15,31 +17,54 @@ export const handleDamageProduct = async (req, res) => {
     }
 
     for (const box of boxes) {
-      const { boxNo, partsQty } = box;
+      const boxNo = box.boxNo;
+      const partsQty = Number(box.partsQty); // Convert partsQty to a number
 
-      if (!boxNo || typeof partsQty !== "number") {
+      if (!boxNo || isNaN(partsQty) || partsQty <= 0) {
+        console.error("Invalid box data:", box);
         continue; // Skip invalid box data
       }
+
+      console.log(`Processing box: BoxNo=${boxNo}, PartsQty=${partsQty}, Action=${action}`);
 
       const selectedProduct = await ProductModel.findOne({ category, subCategory });
 
       if (!selectedProduct) {
-        continue; // Skip if product not found
+        console.error(`No product found for category=${category} and subCategory=${subCategory}`);
+        continue;
       }
 
       if (!selectedProduct.boxes) selectedProduct.boxes = [];
-      selectedProduct.boxes.push({ boxNo, partsQty });
+      const existingBox = selectedProduct.boxes.find((b) => b.boxNo === boxNo);
+
+      if (action === "Add") {
+        if (existingBox) {
+          existingBox.partsQty += partsQty;
+        } else {
+          selectedProduct.boxes.push({ boxNo, partsQty });
+        }
+      } else if (action === "Out") {
+        if (existingBox && existingBox.partsQty >= partsQty) {
+          existingBox.partsQty -= partsQty;
+        } else {
+          console.error("Insufficient parts in box or box not found.");
+          continue;
+        }
+      }
+
       await selectedProduct.save();
 
-      const damageProduct = new DamageProduct({ category, subCategory, boxNo, quantity: partsQty });
+      const damageProduct = new DamageProduct({ category, subCategory, boxNo, quantity: partsQty, action });
       await damageProduct.save();
     }
 
-    res.status(200).json({ success: true, message: `New boxes added successfully!` });
+    res.status(200).json({ success: true, message: "Operation completed successfully." });
   } catch (error) {
-    res.status(500).json({ success: false, message: "Failed to add new boxes", error });
+    console.error("Error in handleDamageProduct:", error);
+    res.status(500).json({ success: false, message: "Failed to process request", error });
   }
 };
+
 
 export const getDamageProducts = async (req, res) => {
   try {

@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
-import "../models/category.model.js"; // Ensure Category is registered
-import "../models/subCategory.model.js"; // Ensure SubCategory is registered
+import "../models/category.model.js"; // Ensure Category model is registered
+import "../models/subCategory.model.js"; // Ensure SubCategory model is registered
 
 const damageProductSchema = new mongoose.Schema(
   {
@@ -13,7 +13,6 @@ const damageProductSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Always check for existing model to avoid OverwriteModelError
 const DamageProduct =
   mongoose.models.DamageProduct || mongoose.model("DamageProduct", damageProductSchema);
 

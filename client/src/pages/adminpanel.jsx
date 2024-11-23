@@ -1,45 +1,58 @@
-import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
-import isAdmin from '../utils/isAdmin';
-import Axios from '../utils/Axios';
-import SummaryApi from '../common/SummaryApi';
-import { combineBoxes } from '../utils';
-
+import React, { useEffect, useState } from "react";
+import { useSelector } from "react-redux";
+import isAdmin from "../utils/isAdmin";
+import Axios from "../utils/Axios";
+import SummaryApi from "../common/SummaryApi";
+import { combineBoxes } from "../utils";
 
 const Dashboard = () => {
   const user = useSelector((state) => state.user);
+
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('');
+  const [damagedProducts, setDamagedProducts] = useState([]); // For damaged products
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [zoomedImage, setZoomedImage] = useState(null);
   const [selectedDetails, setSelectedDetails] = useState(null);
 
+  // Fetch data from APIs
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [categoriesResponse, subCategoriesResponse, productsResponse] = await Promise.all([
+        const [
+          categoriesResponse,
+          subCategoriesResponse,
+          productsResponse,
+          damagedProductsResponse,
+        ] = await Promise.all([
           Axios({ ...SummaryApi.getCategory }),
           Axios({ ...SummaryApi.getSubCategory }),
           Axios({ ...SummaryApi.getProduct }),
+          Axios({ ...SummaryApi.getDamageProducts }), // Fetch damaged products
         ]);
 
         if (categoriesResponse.data.success) setCategories(categoriesResponse.data.data);
         if (subCategoriesResponse.data.success) setSubCategories(subCategoriesResponse.data.data);
         if (productsResponse.data.success) setProducts(productsResponse.data.data);
+        if (damagedProductsResponse.data.success)
+          setDamagedProducts(damagedProductsResponse.data.data); // Store damaged products
       } catch (error) {
-        console.error('Error fetching data:', error);
+        console.error("Error fetching data:", error);
       }
     };
 
     fetchData();
   }, []);
 
+  // Helper to calculate subcategory data
   const getSubCategoryData = (subCategoryId) => {
+    // Filter products for this subcategory
     const productData = products.filter((product) =>
       product.subCategory.some((sub) => sub._id === subCategoryId)
     );
 
+    // Calculate total boxes and parts quantity
     const totalBoxes = productData.reduce(
       (acc, product) => acc + (product.boxes?.length || 0),
       0
@@ -52,18 +65,35 @@ const Dashboard = () => {
       0
     );
 
+    // Detailed boxes
     const detailedBoxes = productData.flatMap((product) =>
       product.boxes.map((box) => ({
         boxNo: box.boxNo,
         partsQty: box.partsQty,
-        action: box.partsQty > 0 ? "Add" : "Out", // Add logic for action
-        dateAdded: product.updatedAt,// Fetch the updatedAt field directly from the product
+        action: box.partsQty > 0 ? "Add" : "Out",
+        dateAdded: product.updatedAt,
       }))
     );
 
     return { totalBoxes, totalPartsQty, detailedBoxes };
   };
 
+  // Helper to calculate total damaged parts for a subcategory
+  const getTotalDamagedParts = (subCategoryId) => {
+    const damagedData = damagedProducts.filter(
+      (damage) => damage.subCategory._id === subCategoryId
+    );
+
+    const totalDamagedParts = damagedData.reduce((acc, damage) => {
+      if (damage.action === "Add") return acc + damage.quantity;
+      if (damage.action === "Out") return acc - damage.quantity;
+      return acc;
+    }, 0);
+
+    return totalDamagedParts;
+  };
+
+  // Filter subcategories based on selected category
   const filteredSubCategories = subCategories.filter((sub) =>
     selectedCategory ? sub.category.some((cat) => cat._id === selectedCategory) : true
   );
@@ -77,13 +107,13 @@ const Dashboard = () => {
       <div className="container mx-auto p-3">
         {/* Stat Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
-          {['Total Cameras', 'Total Box', 'Today Summary', 'Live Projects'].map((title, index) => (
+          {["Total Cameras", "Total Box", "Today Summary", "Live Projects"].map((title, index) => (
             <div key={index} className="bg-white shadow rounded-lg p-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-gray-600 text-sm font-semibold">{title.toUpperCase()}</h3>
                 <span
                   className={`p-2 rounded-full ${
-                    ['bg-blue-500', 'bg-green-500', 'bg-orange-500', 'bg-purple-500'][index]
+                    ["bg-blue-500", "bg-green-500", "bg-orange-500", "bg-purple-500"][index]
                   } text-white text-sm`}
                 >
                   $
@@ -97,9 +127,7 @@ const Dashboard = () => {
 
         {/* Category Filter */}
         <div className="mb-6">
-          <label className="block text-lg font-medium text-gray-700 mb-2">
-            Select Category
-          </label>
+          <label className="block text-lg font-medium text-gray-700 mb-2">Select Category</label>
           <select
             className="w-full p-2 border rounded-md bg-gray-50"
             value={selectedCategory}
@@ -120,6 +148,8 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {filteredSubCategories.map((sub) => {
                 const { totalBoxes, totalPartsQty, detailedBoxes } = getSubCategoryData(sub._id);
+                const totalDamagedParts = getTotalDamagedParts(sub._id); // Get total damaged parts
+
                 return (
                   <div
                     key={sub._id}
@@ -139,6 +169,7 @@ const Dashboard = () => {
                       <p>Code: {sub.code}</p>
                       <p>Total Boxes: {totalBoxes}</p>
                       <p>Total Parts Qty: {totalPartsQty}</p>
+                      <p>Total Damaged Parts: {totalDamagedParts}</p> {/* New line */}
                     </div>
                   </div>
                 );
@@ -148,8 +179,7 @@ const Dashboard = () => {
             <p className="text-center text-gray-500">No subcategories found.</p>
           )}
         </div>
-
-        {/* Image Zoom Modal */}
+     {/* Image Zoom Modal */}
         {zoomedImage && (
           <div
             className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
@@ -164,7 +194,7 @@ const Dashboard = () => {
           </div>
         )}
 
-        {/* Details Modal */}
+     {/* Details Modal */}
         {selectedDetails && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-lg w-full">
