@@ -120,6 +120,14 @@ const router = createBrowserRouter([
               </AdminPermision>
             ),
           },
+          {
+            path: "adminpanel",
+            element: (
+              <AdminPermision>
+                <Adminpanel />
+              </AdminPermision>
+            ),
+          },
         ],
       },
       {
