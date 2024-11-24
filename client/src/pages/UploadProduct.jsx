@@ -40,7 +40,7 @@ const UploadProduct = () => {
           subCategoryCode: item.subCategory[0]?.code || "N/A",
           boxNo: item.boxes[0]?.boxNo || "N/A",
           partsQty: item.boxes[0]?.partsQty || 0,
-          date: new Date(item.createdAt).toISOString().split("T")[0], // Normalize date to YYYY-MM-DD
+          date: new Intl.DateTimeFormat("en-GB").format(new Date(item.createdAt)), // Format as DD/MM/YYYY
         }));
         setHistory(fetchedData);
       }
@@ -48,6 +48,7 @@ const UploadProduct = () => {
       AxiosToastError(error);
     }
   };
+  
 
   useEffect(() => {
     fetchHistory(); // Fetch history on component load
@@ -57,14 +58,14 @@ const UploadProduct = () => {
   const applyFilters = () => {
     return history.filter((item) => {
       return (
-        (!filters.date || item.date === filters.date) &&
+        (!filters.date || item.date === new Intl.DateTimeFormat("en-GB").format(new Date(filters.date))) &&
         (!filters.category || item.categoryName === filters.category) &&
         (!filters.subCategory || item.subCategoryName === filters.subCategory) &&
         (!filters.box || item.boxNo.toLowerCase().includes(filters.box.toLowerCase()))
       );
     });
   };
-
+  
   const filteredHistory = applyFilters();
 
   const handleChange = (e) => {
@@ -202,9 +203,9 @@ const UploadProduct = () => {
             <table className="w-full border-collapse border border-gray-200">
               <thead>
                 <tr className="bg-blue-50">
-                  <th className="border border-gray-300 px-4 py-2">Category Name</th>
-                  <th className="border border-gray-300 px-4 py-2">Sub Category Name</th>
-                  <th className="border border-gray-300 px-4 py-2">Sub Category Code</th>
+                  <th className="border border-gray-300 px-4 py-2">Camera Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Parts Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Parts Code</th>
                   <th className="border border-gray-300 px-4 py-2">Box No.</th>
                   <th className="border border-gray-300 px-4 py-2">Qty</th>
                   <th className="border border-gray-300 px-4 py-2">Date</th>

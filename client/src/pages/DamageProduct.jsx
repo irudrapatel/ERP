@@ -65,12 +65,18 @@ const DamageProduct = () => {
     try {
       const response = await Axios(SummaryApi.getDamageProducts);
       if (response.data.success) {
-        setHistory(response.data.data);
+        setHistory(
+          response.data.data.map((item) => ({
+            ...item,
+            formattedDate: new Intl.DateTimeFormat("en-GB").format(new Date(item.createdAt)), // Format as DD/MM/YYYY
+          }))
+        );
       }
     } catch (error) {
       AxiosToastError(error);
     }
   };
+  
 
   const handleAddBox = () => {
     setData((prev) => ({
@@ -110,7 +116,8 @@ const DamageProduct = () => {
     return history.filter((item) => {
       return (
         (!filters.date ||
-          new Date(item.createdAt).toISOString().split("T")[0] === filters.date) &&
+          item.formattedDate ===
+            new Intl.DateTimeFormat("en-GB").format(new Date(filters.date))) &&
         (!filters.category || item.category?.name === filters.category) &&
         (!filters.subCategory || item.subCategory?.name === filters.subCategory) &&
         (!filters.box || item.boxNo === filters.box) &&
@@ -118,7 +125,7 @@ const DamageProduct = () => {
       );
     });
   };
-
+  
 // Sort the filtered history to display the latest entry first
 const filteredHistory = applyFilters().sort(
   (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
@@ -191,18 +198,6 @@ const filteredHistory = applyFilters().sort(
               </select>
             </div>
             <div>
-              <label className="font-medium block mb-1">Box No</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded"
-                value={filters.box}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, box: e.target.value }))
-                }
-                placeholder="Enter Box No."
-              />
-            </div>
-            <div>
               <label className="font-medium block mb-1">Action</label>
               <select
                 className="w-full p-2 border rounded"
@@ -216,6 +211,18 @@ const filteredHistory = applyFilters().sort(
                 <option value="Out">Out</option>
               </select>
             </div>
+            <div>
+              <label className="font-medium block mb-1">Box No</label>
+              <input
+                type="text"
+                className="w-full p-2 border rounded"
+                value={filters.box}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, box: e.target.value }))
+                }
+                placeholder="Enter Box No."
+              />
+            </div>
           </div>
         </div>
 
@@ -225,8 +232,8 @@ const filteredHistory = applyFilters().sort(
           <table className="w-full border-collapse border border-gray-200">
             <thead>
               <tr className="bg-blue-100 text-center">
-                <th className="border border-gray-200 p-2">Category Name</th>
-                <th className="border border-gray-200 p-2">Sub Category Name</th>
+                <th className="border border-gray-200 p-2">Camera Name</th>
+                <th className="border border-gray-200 p-2">Parts Name</th>
                 <th className="border border-gray-200 p-2">Box No</th>
                 <th className="border border-gray-200 p-2">Qty</th>
                 <th className="border border-gray-200 p-2">Action</th>
@@ -246,9 +253,7 @@ const filteredHistory = applyFilters().sort(
                     <td className="border border-gray-200 p-2">{item.boxNo}</td>
                     <td className="border border-gray-200 p-2">{item.quantity}</td>
                     <td className="border border-gray-200 p-2">{item.action}</td>
-                    <td className="border border-gray-200 p-2">
-                      {new Date(item.createdAt).toLocaleDateString()}
-                    </td>
+                    <td className="border border-gray-200 p-2">{item.formattedDate}</td>
                   </tr>
                 ))
               ) : (

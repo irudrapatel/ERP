@@ -35,22 +35,29 @@ const OutProduct = () => {
   // Fetch history data
   const fetchHistory = async () => {
     try {
-      const response = await Axios(SummaryApi.getProduct);
+      const response = await Axios(SummaryApi.getOutProduct);
       if (response.data.success) {
         const fetchedHistory = response.data.data.map((item) => ({
-          categoryName: item.category[0]?.name || "N/A",
-          subCategoryName: item.subCategory[0]?.name || "N/A",
-          subCategoryCode: item.subCategory[0]?.code || "N/A",
-          boxNo: item.boxes[0]?.boxNo || "N/A",
-          partsQty: item.boxes[0]?.partsQty || 0,
-          date: new Date(item.createdAt).toISOString().split("T")[0], // Normalize date to YYYY-MM-DD
+          categoryName: item.category?.name || "N/A",
+          subCategoryName: item.subCategory?.name || "N/A",
+          subCategoryCode: item.subCategory?.code || "N/A", // Use populated code
+          boxNo: item.box?.boxNo || "Unknown Box", // Use populated boxNo
+          partsQty: item.quantity || 0,
+          date: new Date(item.createdAt).toLocaleDateString("en-GB"), // Format to DD-MM-YYYY
         }));
-        setHistory(fetchedHistory);
+  
+        // Reverse the fetched history to show the newest first
+        setHistory(fetchedHistory.reverse());
+      } else {
+        console.error("Failed to fetch history:", response.data.message);
       }
     } catch (error) {
       AxiosToastError(error);
     }
   };
+  
+  
+  
 
   useEffect(() => {
     fetchHistory(); // Fetch history on component mount
@@ -133,14 +140,20 @@ const OutProduct = () => {
   // Apply filters to history
   const applyFilters = () => {
     return history.filter((item) => {
+      // Convert both filter date and item date to a comparable format (DD-MM-YYYY)
+      const formattedFilterDate = filters.date
+        ? new Date(filters.date).toLocaleDateString("en-GB")
+        : null;
+  
       return (
-        (!filters.date || item.date === filters.date) &&
+        (!formattedFilterDate || item.date === formattedFilterDate) &&
         (!filters.category || item.categoryName === filters.category) &&
         (!filters.subCategory || item.subCategoryName === filters.subCategory) &&
         (!filters.box || item.boxNo.toLowerCase().includes(filters.box.toLowerCase()))
       );
     });
   };
+  
 
   const filteredHistory = applyFilters();
 
@@ -223,9 +236,9 @@ const OutProduct = () => {
             <table className="w-full border-collapse border border-gray-200">
               <thead>
                 <tr className="bg-blue-50">
-                  <th className="border border-gray-300 px-4 py-2">Category Name</th>
-                  <th className="border border-gray-300 px-4 py-2">Sub Category Name</th>
-                  <th className="border border-gray-300 px-4 py-2">Sub Category Code</th>
+                  <th className="border border-gray-300 px-4 py-2">Camera Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Parts Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Parts Code</th>
                   <th className="border border-gray-300 px-4 py-2">Box No.</th>
                   <th className="border border-gray-300 px-4 py-2">Qty</th>
                   <th className="border border-gray-300 px-4 py-2">Date</th>

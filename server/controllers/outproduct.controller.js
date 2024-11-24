@@ -1,6 +1,8 @@
 import mongoose from 'mongoose';
 import OutProduct from '../models/outproduct.model.js';
 import ProductModel from "../models/product.model.js";
+import CategoryModel from "../models/category.model.js"; // Ensure this is imported
+import SubCategoryModel from "../models/subcategory.model.js"; // Ensure this is imported
 
 // Add Out Product
 export const addOutProduct = async (req, res) => {
@@ -73,17 +75,58 @@ export const addOutProduct = async (req, res) => {
 };
 
 // Get Out Products
+
 export const getOutProducts = async (req, res) => {
   try {
-    // Fetch all out products and populate related fields
-    const outProducts = await OutProduct.find()
-      .populate('category', 'name')
-      .populate('subCategory', 'name')
-      .populate('box', 'boxNo');
+    // Ensure models are registered
+    if (!mongoose.modelNames().includes("Category")) {
+      mongoose.model("Category", CategoryModel.schema);
+    }
+    if (!mongoose.modelNames().includes("SubCategory")) {
+      mongoose.model("SubCategory", SubCategoryModel.schema);
+    }
 
-    res.status(200).json({ success: true, data: outProducts });
+    // Fetch all out products and populate category and subCategory
+    const outProducts = await OutProduct.find()
+      .populate({ path: "category", model: "Category", select: "name" })
+      .populate({ path: "subCategory", model: "SubCategory", select: "name code" });
+
+    // Fetch box details from ProductModel
+    const populatedProducts = await Promise.all(
+      outProducts.map(async (outProduct) => {
+        const product = await ProductModel.findOne(
+          { "boxes._id": outProduct.box },
+          { "boxes.$": 1 } // Only fetch the matched box
+        );
+
+        // Attach box details if found
+        if (product && product.boxes.length > 0) {
+          const box = product.boxes[0]; // Since we fetched a single box
+          return {
+            ...outProduct.toObject(),
+            box: {
+              _id: box._id,
+              boxNo: box.boxNo || "Unknown Box",
+              token: box.token || "Unknown Token",
+            },
+          };
+        }
+
+        // If no box is found, return a placeholder
+        return {
+          ...outProduct.toObject(),
+          box: {
+            _id: outProduct.box,
+            boxNo: "Unknown Box",
+            token: "Unknown Token",
+          },
+        };
+      })
+    );
+
+    res.status(200).json({ success: true, data: populatedProducts });
   } catch (error) {
     console.error("Error fetching out products:", error);
-    res.status(500).json({ success: false, message: 'Failed to fetch Out Products', error });
+    res.status(500).json({ success: false, message: "Failed to fetch Out Products", error });
   }
 };
