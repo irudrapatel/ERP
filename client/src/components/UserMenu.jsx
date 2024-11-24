@@ -99,6 +99,14 @@ const UserMenu = ({ close }) => {
 
             <Link
               onClick={handleClose}
+              to={"/dashboard/ready-camera"} // Ready Camera Link
+              className="px-2 hover:bg-orange-200 py-1"
+            >
+              Ready Camera
+            </Link>
+
+            <Link
+              onClick={handleClose}
               to={"/dashboard/out-product"}
               className="px-2 hover:bg-orange-200 py-1"
             >

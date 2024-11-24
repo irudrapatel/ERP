@@ -13,14 +13,15 @@ import CategoryPage from "../pages/CategoryPage";
 import SubCategoryPage from "../pages/SubCategoryPage";
 import UploadProduct from "../pages/UploadProduct";
 import ProductAdmin from "../pages/ProductAdmin";
+import ReadyCamera from "../pages/ReadyCamera"; // Import ReadyCamera
 import AdminPermision from "../layouts/AdminPermision";
 import ProductListPage from "../pages/ProductListPage";
 import ProductDisplayPage from "../pages/ProductDisplayPage";
 import Success from "../pages/Success";
 import Cancel from "../pages/Cancel";
 import Adminpanel from "../pages/adminpanel";
-import OutProduct from "../pages/OutProduct"; // Import OutProduct page
-import DamageProduct from "../pages/DamageProduct"; // Import DamageProduct component
+import OutProduct from "../pages/OutProduct";
+import DamageProduct from "../pages/DamageProduct";
 
 const router = createBrowserRouter([
   {
@@ -72,22 +73,6 @@ const router = createBrowserRouter([
             ),
           },
           {
-            path: "damage-product",
-            element: (
-              <AdminPermision>
-                <DamageProduct />
-              </AdminPermision>
-            ),
-          },
-          {
-            path: "adminpanel",
-            element: (
-              <AdminPermision>
-                <Adminpanel />
-              </AdminPermision>
-            ),
-          },
-          {
             path: "subcategory",
             element: (
               <AdminPermision>
@@ -104,10 +89,26 @@ const router = createBrowserRouter([
             ),
           },
           {
+            path: "ready-camera", // Add ReadyCamera route
+            element: (
+              <AdminPermision>
+                <ReadyCamera />
+              </AdminPermision>
+            ),
+          },
+          {
             path: "product",
             element: (
               <AdminPermision>
                 <ProductAdmin />
+              </AdminPermision>
+            ),
+          },
+          {
+            path: "damage-product",
+            element: (
+              <AdminPermision>
+                <DamageProduct />
               </AdminPermision>
             ),
           },

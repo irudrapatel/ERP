@@ -170,6 +170,14 @@ const SummaryApi = {
         url: '/api/damageproduct/all',
         method: 'get',
     },
+    createReadyCamera: {
+        url: "/api/readycamera/create",
+        method: "post",
+    },
+    getReadyCameraHistory: {
+        url: "/api/readycamera/history",
+        method: "get",
+    },
 };
 
 export default SummaryApi;
