@@ -9,8 +9,6 @@ import ResetPassword from "../pages/ResetPassword";
 import UserMenuMobile from "../pages/UserMenuMobile";
 import Dashboard from "../layouts/Dashboard";
 import Profile from "../pages/Profile";
-import MyOrders from "../pages/MyOrders";
-import Address from "../pages/Address";
 import CategoryPage from "../pages/CategoryPage";
 import SubCategoryPage from "../pages/SubCategoryPage";
 import UploadProduct from "../pages/UploadProduct";
@@ -18,8 +16,6 @@ import ProductAdmin from "../pages/ProductAdmin";
 import AdminPermision from "../layouts/AdminPermision";
 import ProductListPage from "../pages/ProductListPage";
 import ProductDisplayPage from "../pages/ProductDisplayPage";
-import CartMobile from "../pages/CartMobile";
-import CheckoutPage from "../pages/CheckoutPage";
 import Success from "../pages/Success";
 import Cancel from "../pages/Cancel";
 import Adminpanel from "../pages/adminpanel";
@@ -66,14 +62,6 @@ const router = createBrowserRouter([
           {
             path: "profile",
             element: <Profile />,
-          },
-          {
-            path: "myorders",
-            element: <MyOrders />,
-          },
-          {
-            path: "address",
-            element: <Address />,
           },
           {
             path: "category",
@@ -124,7 +112,7 @@ const router = createBrowserRouter([
             ),
           },
           {
-            path: "out-product", // Add route for OutProduct
+            path: "out-product",
             element: (
               <AdminPermision>
                 <OutProduct />
@@ -145,14 +133,6 @@ const router = createBrowserRouter([
       {
         path: "product/:product",
         element: <ProductDisplayPage />,
-      },
-      {
-        path: "cart",
-        element: <CartMobile />,
-      },
-      {
-        path: "checkout",
-        element: <CheckoutPage />,
       },
       {
         path: "success",

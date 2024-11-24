@@ -11,47 +11,40 @@ import categoryRouter from './route/category.route.js'
 import uploadRouter from './route/upload.router.js'
 import subCategoryRouter from './route/subCategory.route.js'
 import productRouter from './route/product.route.js'
-import cartRouter from './route/cart.route.js'
-import addressRouter from './route/address.route.js'
-import orderRouter from './route/order.route.js'
 import outProductRouter from './route/outproduct.route.js'
-import damageProductRouter from './route/damageproduct.route.js'; // Import the new route
+import damageProductRouter from './route/damageproduct.route.js'
 
 const app = express()
 app.use(cors({
-    credentials : true,
-    origin : process.env.FRONTEND_URL
+    credentials: true,
+    origin: process.env.FRONTEND_URL
 }))
 app.use(express.json())
 app.use(cookieParser())
 app.use(morgan())
 app.use(helmet({
-    crossOriginResourcePolicy : false
+    crossOriginResourcePolicy: false
 }))
 
-const PORT = 8080 || process.env.PORT 
+const PORT = 8080 || process.env.PORT
 
-app.get("/",(request,response)=>{
-    ///server to client
+app.get("/", (request, response) => {
+    // Server to client
     response.json({
-        message : "Server is running " + PORT
+        message: "Server is running " + PORT
     })
 })
 
-app.use('/api/user',userRouter)
-app.use("/api/category",categoryRouter)
-app.use("/api/file",uploadRouter)
-app.use("/api/subcategory",subCategoryRouter)
-app.use("/api/product",productRouter)
-app.use("/api/cart",cartRouter)
-app.use("/api/address",addressRouter)
-app.use('/api/order',orderRouter)
-app.use('/api/outproduct', outProductRouter);
-app.use('/api/damageproduct', damageProductRouter); // Add route for Damage Product
+app.use('/api/user', userRouter)
+app.use("/api/category", categoryRouter)
+app.use("/api/file", uploadRouter)
+app.use("/api/subcategory", subCategoryRouter)
+app.use("/api/product", productRouter)
+app.use('/api/outproduct', outProductRouter)
+app.use('/api/damageproduct', damageProductRouter)
 
-connectDB().then(()=>{
-    app.listen(PORT,()=>{
-        console.log("Server is running",PORT)
+connectDB().then(() => {
+    app.listen(PORT, () => {
+        console.log("Server is running", PORT)
     })
 })
-
