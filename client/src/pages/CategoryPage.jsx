@@ -73,9 +73,9 @@ const CategoryPage = () => {
 
   return (
     <section className=''>
-        <div className='p-2   bg-white shadow-md flex items-center justify-between'>
-            <h2 className='font-semibold'>Camera Category</h2>
-            <button onClick={()=>setOpenUploadCategory(true)} className='text-sm border border-primary-200 hover:bg-primary-200 px-3 py-1 rounded'>Add Camera Category</button>
+        <div className='flex items-center justify-between bg-white shadow-md p-4 rounded'>
+            <h2 className='font-semibold text-lg'>Camera Category</h2>
+            <button onClick={()=>setOpenUploadCategory(true)} className='bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600'>Add Camera Category</button>
         </div>
         {
             !categoryData[0] && !loading && (

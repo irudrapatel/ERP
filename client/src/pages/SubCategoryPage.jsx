@@ -131,9 +131,9 @@ const SubCategoryPage = () => {
   }
   return (
     <section className=''>
-        <div className='p-2   bg-white shadow-md flex items-center justify-between'>
-            <h2 className='font-semibold'>Camera Parts</h2>
-            <button onClick={()=>setOpenAddSubCategory(true)} className='text-sm border border-primary-200 hover:bg-primary-200 px-3 py-1 rounded'>Add Camera Part</button>
+        <div className='flex items-center justify-between bg-white shadow-md p-4 rounded'>
+            <h2 className='font-semibold text-lg'>Camera Parts</h2>
+            <button onClick={()=>setOpenAddSubCategory(true)} className='bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600'>Add Camera Part</button>
         </div>
 
         <div className='overflow-auto w-full max-w-[95vw]'>

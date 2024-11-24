@@ -13,11 +13,15 @@ const UploadProduct = () => {
     description: '',
     boxes: [], // Stores Box No. and Parts Qty
   });
-  const allCategory = useSelector(state => state.product.allCategory);
-  const allSubCategory = useSelector(state => state.product.allSubCategory);
+  const allCategory = useSelector((state) => state.product.allCategory);
+  const allSubCategory = useSelector((state) => state.product.allSubCategory);
+
   const [selectCategory, setSelectCategory] = useState('');
   const [selectSubCategory, setSelectSubCategory] = useState('');
   const [ViewImageURL, setViewImageURL] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false); // State to handle modal visibility
+  const openModal = () => setIsModalOpen(true);
+  const closeModal = () => setIsModalOpen(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -53,12 +57,12 @@ const UploadProduct = () => {
           partsQty: box.partsQty, // Correct key name
         })),
       };
-  
+
       const response = await Axios({
         ...SummaryApi.createProduct,
         data: requestData,
       });
-  
+
       const { data: responseData } = response;
       if (responseData.success) {
         successAlert(responseData.message);
@@ -68,147 +72,171 @@ const UploadProduct = () => {
           description: '',
           boxes: [],
         });
+        setIsModalOpen(false); // Close modal after successful submission
       }
     } catch (error) {
       AxiosToastError(error);
     }
   };
-  
+
+
 
   return (
     <section className="bg-white">
       <div className="container mx-auto p-4">
-      <h2 className="font-semibold text-lg mb-4">Inward Camera Part</h2>
-        <form className="grid gap-4 bg-gray-50 p-6 rounded shadow" onSubmit={handleSubmit}>
-          {/* Select Category */}
-          <div className="grid gap-1">
-            <label className="font-medium">Camera Category</label>
-            <select
-              className="bg-blue-50 border w-full p-2 rounded"
-              value={selectCategory}
-              onChange={(e) => {
-                const value = e.target.value;
-                const category = allCategory.find(el => el._id === value);
-                setData((prev) => ({
-                  ...prev,
-                  category: [category],
-                  subCategory: [], // Clear subcategory on category change
-                }));
-                setSelectCategory(value);
-              }}
-            >
-              <option value={''}>Select Camera</option>
-              {allCategory.map((c) => (
-                <option value={c._id} key={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+        {/* Header Section */}
+        <div className="flex items-center justify-between bg-white shadow-md p-4 rounded">
+          <h2 className="font-semibold text-lg">Inward Camera Part</h2>
+          <button
+            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+            onClick={openModal}
+          >
+            Upload Product
+          </button>
+        </div>
 
-          {/* Select Sub Category */}
-          <div className="grid gap-1">
-            <label className="font-medium">Select Camera Part</label>
-            <select
-              className="bg-blue-50 border w-full p-2 rounded"
-              value={selectSubCategory}
-              onChange={(e) => {
-                const value = e.target.value;
-                const subCategory = allSubCategory.find(el => el._id === value);
-                setData((prev) => ({
-                  ...prev,
-                  subCategory: [subCategory],
-                }));
-                setSelectSubCategory(value);
-              }}
-            >
-              <option value={''}>Select Part</option>
-              {allSubCategory
-                .filter(sub => sub.category.some(cat => cat._id === selectCategory))
-                .map((sub) => (
-                  <option value={sub._id} key={sub._id}>
-                    {`${sub.code} - ${sub.name}`}
-                  </option>
-                ))}
-            </select>
-          </div>
+        {/* Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
+              <button
+                className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold"
+                onClick={closeModal}
+              >
+                ×
+              </button>
+              <h2 className="font-semibold text-lg mb-4">Upload Product</h2>
+              <form className="grid gap-4" onSubmit={handleSubmit}>
+                {/* Select Category */}
+                <div className="grid gap-1">
+                  <label className="font-medium">Camera Category</label>
+                  <select
+                    className="bg-blue-50 border w-full p-2 rounded"
+                    value={selectCategory}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const category = allCategory.find((el) => el._id === value);
+                      setData((prev) => ({
+                        ...prev,
+                        category: [category],
+                        subCategory: [], // Clear subcategory on category change
+                      }));
+                      setSelectCategory(value);
+                    }}
+                  >
+                    <option value="">Select Camera</option>
+                    {allCategory.map((c) => (
+                      <option value={c._id} key={c._id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
+                {/* Select Sub Category */}
+                <div className="grid gap-1">
+                  <label className="font-medium">Select Camera Part</label>
+                  <select
+                    className="bg-blue-50 border w-full p-2 rounded"
+                    value={selectSubCategory}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const subCategory = allSubCategory.find(
+                        (el) => el._id === value
+                      );
+                      setData((prev) => ({
+                        ...prev,
+                        subCategory: [subCategory],
+                      }));
+                      setSelectSubCategory(value);
+                    }}
+                  >
+                    <option value="">Select Part</option>
+                    {allSubCategory
+                      .filter((sub) =>
+                        sub.category.some((cat) => cat._id === selectCategory)
+                      )
+                      .map((sub) => (
+                        <option value={sub._id} key={sub._id}>
+                          {`${sub.code} - ${sub.name}`}
+                        </option>
+                      ))}
+                  </select>
+                </div>
 
-          {/* Add Box */}
-          <div>
-            <button
-              type="button"
-              className="hover:bg-primary-200 bg-white py-1 px-3 w-32 text-center font-semibold border border-primary-200 hover:text-neutral-900 cursor-pointer rounded"
-              onClick={handleAddBox}
-            >
-              Add Box
-            </button>
-            {data.boxes.map((box, index) => (
-              <div className="grid grid-cols-2 gap-4 mt-2" key={index}>
-                <input
-                  type="text"
-                  placeholder="Box No."
-                  value={box.boxNo}
-                  onChange={(e) => handleBoxChange(index, 'boxNo', e.target.value)}
-                  className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
-                />
-                <input
-                  type="number"
-                  placeholder="Parts Qty"
-                  value={box.partsQty}
-                  onChange={(e) =>
-                    handleBoxChange(index, 'partsQty', e.target.value)
-                  }
-                  className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
-                />
-              </div>
-            ))}
+                {/* Add Box */}
+                <div>
+                  <button
+                    type="button"
+                    className="hover:bg-primary-200 bg-white py-1 px-3 w-32 text-center font-semibold border border-primary-200 hover:text-neutral-900 cursor-pointer rounded"
+                    onClick={handleAddBox}
+                  >
+                    Add Box
+                  </button>
+                  {data.boxes.map((box, index) => (
+                    <div
+                      className="grid grid-cols-2 gap-4 mt-2"
+                      key={index}
+                    >
+                      <input
+                        type="text"
+                        placeholder="Box No."
+                        value={box.boxNo}
+                        onChange={(e) =>
+                          handleBoxChange(index, 'boxNo', e.target.value)
+                        }
+                        className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
+                      />
+                      <input
+                        type="number"
+                        placeholder="Parts Qty"
+                        value={box.partsQty}
+                        onChange={(e) =>
+                          handleBoxChange(index, 'partsQty', e.target.value)
+                        }
+                        className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
+                      />
+                    </div>
+                  ))}
 
-            {/* Total Box and Total Parts Quantity in One Line */}
-            <div className="flex justify-between text-sm text-gray-600 mt-2">
-              <span>Total Box: {data.boxes.length}</span>
-              <span>
-                Total Parts Quantity:{" "}
-                {data.boxes.reduce((total, box) => total + Number(box.partsQty || 0), 0)}
-              </span>
+                  {/* Total Box and Total Parts Quantity */}
+                  <div className="flex justify-between text-sm text-gray-600 mt-2">
+                    <span>Total Box: {data.boxes.length}</span>
+                    <span>
+                      Total Parts Quantity:{' '}
+                      {data.boxes.reduce(
+                        (total, box) => total + Number(box.partsQty || 0),
+                        0
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Description */}
+                <div className="grid gap-1">
+                  <label htmlFor="description" className="font-medium">
+                    Description
+                  </label>
+                  <textarea
+                    id="description"
+                    placeholder="Enter product description (optional)"
+                    name="description"
+                    value={data.description}
+                    onChange={handleChange}
+                    rows={3}
+                    className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded resize-none"
+                  />
+                </div>
+
+                {/* Submit */}
+                <button className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
+                  Submit
+                </button>
+              </form>
             </div>
           </div>
-
-
-          {/* Description */}
-          <div className="grid gap-1">
-            <label htmlFor="description" className="font-medium">
-              Description
-            </label>
-            <textarea
-              id="description"
-              placeholder="Enter product description (optional)"
-              name="description"
-              value={data.description}
-              onChange={handleChange}
-              rows={3}
-              className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded resize-none"
-            />
-          </div>
-
-
-          {/* Submit */}
-          <button className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600">
-            Submit
-          </button>
-        </form>
+        )}
       </div>
-
-      {/* Image Viewer */}
-      {ViewImageURL && (
-        <div
-          className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center"
-          onClick={() => setViewImageURL('')}
-        >
-          <img src={ViewImageURL} alt="Zoomed" className="max-w-full max-h-full" />
-        </div>
-      )}
-      {/* End Section */}
     </section>
   );
 };
