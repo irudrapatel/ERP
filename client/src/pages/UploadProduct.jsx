@@ -1,27 +1,51 @@
-import React, { useState } from 'react';
-import { useSelector } from 'react-redux';
-import { IoClose } from "react-icons/io5";
-import Axios from '../utils/Axios';
-import SummaryApi from '../common/SummaryApi';
-import AxiosToastError from '../utils/AxiosToastError';
-import successAlert from '../utils/SuccessAlert';
+import React, { useState, useEffect } from "react";
+import { useSelector } from "react-redux";
+import Axios from "../utils/Axios";
+import SummaryApi from "../common/SummaryApi";
+import AxiosToastError from "../utils/AxiosToastError";
+import successAlert from "../utils/SuccessAlert";
 
 const UploadProduct = () => {
   const [data, setData] = useState({
     category: [],
     subCategory: [],
-    description: '',
+    description: "",
     boxes: [], // Stores Box No. and Parts Qty
   });
   const allCategory = useSelector((state) => state.product.allCategory);
   const allSubCategory = useSelector((state) => state.product.allSubCategory);
 
-  const [selectCategory, setSelectCategory] = useState('');
-  const [selectSubCategory, setSelectSubCategory] = useState('');
-  const [ViewImageURL, setViewImageURL] = useState('');
-  const [isModalOpen, setIsModalOpen] = useState(false); // State to handle modal visibility
+  const [selectCategory, setSelectCategory] = useState("");
+  const [selectSubCategory, setSelectSubCategory] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility
+  const [history, setHistory] = useState([]); // Store history
+
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+  // Fetch upload history
+  const fetchHistory = async () => {
+    try {
+      const response = await Axios(SummaryApi.getProduct);
+      if (response.data.success) {
+        const fetchedData = response.data.data.map((item) => ({
+          categoryName: item.category[0]?.name || "N/A",
+          subCategoryName: item.subCategory[0]?.name || "N/A",
+          subCategoryCode: item.subCategory[0]?.code || "N/A",
+          boxNo: item.boxes[0]?.boxNo || "N/A",
+          partsQty: item.boxes[0]?.partsQty || 0,
+          date: new Date(item.createdAt).toLocaleDateString(),
+        }));
+        setHistory(fetchedData);
+      }
+    } catch (error) {
+      AxiosToastError(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory(); // Fetch history on component load
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -34,7 +58,7 @@ const UploadProduct = () => {
   const handleAddBox = () => {
     setData((prev) => ({
       ...prev,
-      boxes: [...prev.boxes, { boxNo: '', partsQty: '' }],
+      boxes: [...prev.boxes, { boxNo: "", partsQty: "" }],
     }));
   };
 
@@ -63,23 +87,21 @@ const UploadProduct = () => {
         data: requestData,
       });
 
-      const { data: responseData } = response;
-      if (responseData.success) {
-        successAlert(responseData.message);
+      if (response.data.success) {
+        successAlert(response.data.message);
         setData({
           category: [],
           subCategory: [],
-          description: '',
+          description: "",
           boxes: [],
         });
-        setIsModalOpen(false); // Close modal after successful submission
+        setIsModalOpen(false); // Close modal after submission
+        fetchHistory(); // Refresh history after upload
       }
     } catch (error) {
       AxiosToastError(error);
     }
   };
-
-
 
   return (
     <section className="bg-white">
@@ -93,6 +115,45 @@ const UploadProduct = () => {
           >
             Upload Product
           </button>
+        </div>
+
+        {/* History Table */}
+        <div className="mt-6">
+          <h3 className="font-semibold text-md mb-4">Upload Product History</h3>
+          <div className="overflow-auto">
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-blue-50">
+                  <th className="border border-gray-300 px-4 py-2">Category Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Sub Category Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Sub Category Code</th>
+                  <th className="border border-gray-300 px-4 py-2">Box No.</th>
+                  <th className="border border-gray-300 px-4 py-2">Qty</th>
+                  <th className="border border-gray-300 px-4 py-2">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.length > 0 ? (
+                  history.map((item, index) => (
+                    <tr key={index} className="text-center">
+                      <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.subCategoryCode}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.date}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center text-gray-500 border border-gray-300 px-4 py-2">
+                      No history available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Modal */}
@@ -174,26 +235,19 @@ const UploadProduct = () => {
                     Add Box
                   </button>
                   {data.boxes.map((box, index) => (
-                    <div
-                      className="grid grid-cols-2 gap-4 mt-2"
-                      key={index}
-                    >
+                    <div className="grid grid-cols-2 gap-4 mt-2" key={index}>
                       <input
                         type="text"
                         placeholder="Box No."
                         value={box.boxNo}
-                        onChange={(e) =>
-                          handleBoxChange(index, 'boxNo', e.target.value)
-                        }
+                        onChange={(e) => handleBoxChange(index, "boxNo", e.target.value)}
                         className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
                       />
                       <input
                         type="number"
                         placeholder="Parts Qty"
                         value={box.partsQty}
-                        onChange={(e) =>
-                          handleBoxChange(index, 'partsQty', e.target.value)
-                        }
+                        onChange={(e) => handleBoxChange(index, "partsQty", e.target.value)}
                         className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
                       />
                     </div>
@@ -203,7 +257,7 @@ const UploadProduct = () => {
                   <div className="flex justify-between text-sm text-gray-600 mt-2">
                     <span>Total Box: {data.boxes.length}</span>
                     <span>
-                      Total Parts Quantity:{' '}
+                      Total Parts Quantity:{" "}
                       {data.boxes.reduce(
                         (total, box) => total + Number(box.partsQty || 0),
                         0

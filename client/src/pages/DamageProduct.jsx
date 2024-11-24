@@ -209,13 +209,13 @@ const DamageProduct = () => {
               <form className="grid gap-4" onSubmit={handleSubmit}>
                 {/* Category */}
                 <div className="grid gap-1">
-                  <label className="font-medium">Category</label>
+                  <label className="font-medium">Caamera Category</label>
                   <select
                     className="bg-blue-50 border w-full p-2 rounded"
                     value={data.category}
                     onChange={(e) => setData({ ...data, category: e.target.value })}
                   >
-                    <option value="">Select Category</option>
+                    <option value="">Select Camera</option>
                     {allCategory.map((cat) => (
                       <option key={cat._id} value={cat._id}>
                         {cat.name}
@@ -226,14 +226,14 @@ const DamageProduct = () => {
 
                 {/* Subcategory */}
                 <div className="grid gap-1">
-                  <label className="font-medium">Subcategory</label>
+                  <label className="font-medium">Camera Part</label>
                   <select
                     className="bg-blue-50 border w-full p-2 rounded"
                     value={data.subCategory}
                     onChange={(e) => setData({ ...data, subCategory: e.target.value })}
                     disabled={!filteredSubCategories.length}
                   >
-                    <option value="">Select Subcategory</option>
+                    <option value="">Select Part</option>
                     {filteredSubCategories.map((sub) => (
                       <option key={sub._id} value={sub._id}>
                         {sub.name}
