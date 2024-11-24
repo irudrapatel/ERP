@@ -135,7 +135,7 @@ const filteredHistory = applyFilters().sort(
     <section className="bg-white">
       <div className="container mx-auto p-4">
         {/* Header Section */}
-        <div className="flex items-center justify-between bg-white shadow-md p-4 rounded">
+        <div className="flex items-center justify-between bg-white shadow-md p-4 rounded mb-4">
           <h2 className="font-semibold text-lg">Manage Damaged Products</h2>
           <button
             className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
