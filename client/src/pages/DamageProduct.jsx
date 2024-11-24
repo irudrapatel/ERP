@@ -19,6 +19,7 @@ const DamageProduct = () => {
   const [filteredSubCategories, setFilteredSubCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
   const [existingBoxes, setExistingBoxes] = useState({}); // Store the current state of boxes
+  const [history, setHistory] = useState([]); // State for tracking history
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -34,6 +35,10 @@ const DamageProduct = () => {
     }
   }, [data.category, allSubCategory]);
 
+  useEffect(() => {
+    fetchHistory(); // Fetch history on component mount
+  }, []);
+
   const fetchExistingBoxes = async (categoryId) => {
     try {
       const response = await Axios({
@@ -43,6 +48,17 @@ const DamageProduct = () => {
 
       if (response.data.success) {
         setExistingBoxes(response.data.data); // Example format: { "A1": 25, "A2": 10 }
+      }
+    } catch (error) {
+      AxiosToastError(error);
+    }
+  };
+
+  const fetchHistory = async () => {
+    try {
+      const response = await Axios(SummaryApi.getDamageProducts); // Fetch history API
+      if (response.data.success) {
+        setHistory(response.data.data);
       }
     } catch (error) {
       AxiosToastError(error);
@@ -111,6 +127,7 @@ const DamageProduct = () => {
         successAlert(response.data.message);
         setData({ category: "", subCategory: "", boxes: [], action: "Add" });
         closeModal(); // Close the modal on successful submission
+        fetchHistory(); // Refresh history
         fetchExistingBoxes(data.category); // Refresh the box data
       }
     } catch (error) {
@@ -130,6 +147,52 @@ const DamageProduct = () => {
           >
             Add/Out Damage
           </button>
+        </div>
+
+        {/* History Table */}
+        <div className="mt-4 bg-gray-50 p-4 rounded shadow">
+          <h3 className="font-semibold text-md mb-3">Damage Product History</h3>
+          <table className="w-full border-collapse border border-gray-200">
+            <thead>
+              <tr className="bg-blue-100">
+                <th className="border border-gray-200 p-2">Category Name</th>
+                <th className="border border-gray-200 p-2">Sub Category Name</th>
+                <th className="border border-gray-200 p-2">Box No</th>
+                <th className="border border-gray-200 p-2">Qty</th>
+                <th className="border border-gray-200 p-2">Action</th>
+                <th className="border border-gray-200 p-2">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {history.length > 0 ? (
+                history.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-100">
+                    <td className="border border-gray-200 p-2">
+                      {item.category?.name || "N/A"}
+                    </td>
+                    <td className="border border-gray-200 p-2">
+                      {item.subCategory?.name || "N/A"}
+                    </td>
+                    <td className="border border-gray-200 p-2">{item.boxNo}</td>
+                    <td className="border border-gray-200 p-2">{item.quantity}</td>
+                    <td className="border border-gray-200 p-2">{item.action}</td>
+                    <td className="border border-gray-200 p-2">
+                      {new Date(item.createdAt).toLocaleDateString()}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td
+                    className="border border-gray-200 p-2 text-center"
+                    colSpan={6}
+                  >
+                    No history available.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
 
         {/* Modal Section */}
