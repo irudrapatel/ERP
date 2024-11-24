@@ -21,9 +21,34 @@ const OutProduct = () => {
   const [filteredBoxes, setFilteredBoxes] = useState([]);
   const [selectedBoxQty, setSelectedBoxQty] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false); // For toggling the modal
+  const [history, setHistory] = useState([]); // State to store the history
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+  // Fetch history data
+  const fetchHistory = async () => {
+    try {
+      const response = await Axios(SummaryApi.getProduct);
+      if (response.data.success) {
+        const fetchedHistory = response.data.data.map((item) => ({
+          categoryName: item.category[0]?.name || "N/A",
+          subCategoryName: item.subCategory[0]?.name || "N/A",
+          subCategoryCode: item.subCategory[0]?.code || "N/A",
+          boxNo: item.boxes[0]?.boxNo || "N/A",
+          partsQty: item.boxes[0]?.partsQty || 0,
+          date: new Date(item.createdAt).toLocaleDateString(),
+        }));
+        setHistory(fetchedHistory);
+      }
+    } catch (error) {
+      AxiosToastError(error);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistory(); // Fetch history on component mount
+  }, []);
 
   // Update subcategories based on the selected category
   useEffect(() => {
@@ -92,6 +117,7 @@ const OutProduct = () => {
         setFilteredBoxes([]);
         setSelectedBoxQty(0);
         closeModal(); // Close modal on successful submission
+        fetchHistory(); // Refresh history after submission
       }
     } catch (error) {
       AxiosToastError(error);
@@ -110,6 +136,45 @@ const OutProduct = () => {
           >
             Out Product
           </button>
+        </div>
+
+        {/* History Table */}
+        <div className="mt-6">
+          <h3 className="font-semibold text-md mb-4">Out Product History</h3>
+          <div className="overflow-auto">
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-blue-50">
+                  <th className="border border-gray-300 px-4 py-2">Category Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Sub Category Name</th>
+                  <th className="border border-gray-300 px-4 py-2">Sub Category Code</th>
+                  <th className="border border-gray-300 px-4 py-2">Box No.</th>
+                  <th className="border border-gray-300 px-4 py-2">Qty</th>
+                  <th className="border border-gray-300 px-4 py-2">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {history.length > 0 ? (
+                  history.map((item, index) => (
+                    <tr key={index} className="text-center">
+                      <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.subCategoryCode}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.date}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="text-center text-gray-500 border border-gray-300 px-4 py-2">
+                      No history available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
 
         {/* Modal Section */}
