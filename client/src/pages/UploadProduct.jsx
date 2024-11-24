@@ -10,7 +10,7 @@ const UploadProduct = () => {
     category: [],
     subCategory: [],
     description: "",
-    boxes: [], // Stores Box No. and Parts Qty
+    boxes: [],
   });
   const allCategory = useSelector((state) => state.product.allCategory);
   const allSubCategory = useSelector((state) => state.product.allSubCategory);
@@ -19,6 +19,12 @@ const UploadProduct = () => {
   const [selectSubCategory, setSelectSubCategory] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility
   const [history, setHistory] = useState([]); // Store history
+  const [filters, setFilters] = useState({
+    date: "",
+    category: "",
+    subCategory: "",
+    box: "",
+  }); // Store filters
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -34,7 +40,7 @@ const UploadProduct = () => {
           subCategoryCode: item.subCategory[0]?.code || "N/A",
           boxNo: item.boxes[0]?.boxNo || "N/A",
           partsQty: item.boxes[0]?.partsQty || 0,
-          date: new Date(item.createdAt).toLocaleDateString(),
+          date: new Date(item.createdAt).toISOString().split("T")[0], // Normalize date to YYYY-MM-DD
         }));
         setHistory(fetchedData);
       }
@@ -46,6 +52,20 @@ const UploadProduct = () => {
   useEffect(() => {
     fetchHistory(); // Fetch history on component load
   }, []);
+
+  // Apply filters to history
+  const applyFilters = () => {
+    return history.filter((item) => {
+      return (
+        (!filters.date || item.date === filters.date) &&
+        (!filters.category || item.categoryName === filters.category) &&
+        (!filters.subCategory || item.subCategoryName === filters.subCategory) &&
+        (!filters.box || item.boxNo.toLowerCase().includes(filters.box.toLowerCase()))
+      );
+    });
+  };
+
+  const filteredHistory = applyFilters();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -78,7 +98,7 @@ const UploadProduct = () => {
         ...data,
         boxes: data.boxes.map((box) => ({
           boxNo: box.boxNo,
-          partsQty: box.partsQty, // Correct key name
+          partsQty: box.partsQty,
         })),
       };
 
@@ -117,6 +137,64 @@ const UploadProduct = () => {
           </button>
         </div>
 
+        {/* Filters */}
+        <div className="bg-gray-100 p-4 rounded mb-4">
+          <h3 className="font-semibold text-md mb-4">Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className="font-medium block mb-1">Date</label>
+              <input
+                type="date"
+                className="w-full p-2 border rounded"
+                value={filters.date}
+                onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))}
+              />
+            </div>
+            <div>
+              <label className="font-medium block mb-1">Category</label>
+              <select
+                className="w-full p-2 border rounded"
+                value={filters.category}
+                onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
+              >
+                <option value="">All Categories</option>
+                {allCategory.map((cat) => (
+                  <option key={cat._id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="font-medium block mb-1">Sub Category</label>
+              <select
+                className="w-full p-2 border rounded"
+                value={filters.subCategory}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, subCategory: e.target.value }))
+                }
+              >
+                <option value="">All Sub Categories</option>
+                {allSubCategory.map((sub) => (
+                  <option key={sub._id} value={sub.name}>
+                    {sub.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="font-medium block mb-1">Box No.</label>
+              <input
+                type="text"
+                className="w-full p-2 border rounded"
+                value={filters.box}
+                onChange={(e) => setFilters((prev) => ({ ...prev, box: e.target.value }))}
+                placeholder="Enter Box No."
+              />
+            </div>
+          </div>
+        </div>
+
         {/* History Table */}
         <div className="mt-6">
           <h3 className="font-semibold text-md mb-4">Upload Product History</h3>
@@ -133,8 +211,8 @@ const UploadProduct = () => {
                 </tr>
               </thead>
               <tbody>
-                {history.length > 0 ? (
-                  history.map((item, index) => (
+                {filteredHistory.length > 0 ? (
+                  filteredHistory.map((item, index) => (
                     <tr key={index} className="text-center">
                       <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
                       <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
@@ -147,7 +225,7 @@ const UploadProduct = () => {
                 ) : (
                   <tr>
                     <td colSpan="6" className="text-center text-gray-500 border border-gray-300 px-4 py-2">
-                      No history available.
+                      No history available for the selected filters.
                     </td>
                   </tr>
                 )}
@@ -180,7 +258,7 @@ const UploadProduct = () => {
                       setData((prev) => ({
                         ...prev,
                         category: [category],
-                        subCategory: [], // Clear subcategory on category change
+                        subCategory: [],
                       }));
                       setSelectCategory(value);
                     }}

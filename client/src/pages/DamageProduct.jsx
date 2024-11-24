@@ -12,14 +12,21 @@ const DamageProduct = () => {
   const [data, setData] = useState({
     category: "",
     subCategory: "",
-    boxes: [], // Multiple boxes for add/out operations
-    action: "Add", // Default action
+    boxes: [],
+    action: "Add",
   });
 
   const [filteredSubCategories, setFilteredSubCategories] = useState([]);
-  const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
-  const [existingBoxes, setExistingBoxes] = useState({}); // Store the current state of boxes
-  const [history, setHistory] = useState([]); // State for tracking history
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [existingBoxes, setExistingBoxes] = useState({});
+  const [history, setHistory] = useState([]);
+  const [filters, setFilters] = useState({
+    date: "",
+    category: "",
+    subCategory: "",
+    box: "",
+    action: "",
+  });
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -31,23 +38,23 @@ const DamageProduct = () => {
       );
       setFilteredSubCategories(filtered);
       setData((prev) => ({ ...prev, subCategory: "", boxes: [] }));
-      fetchExistingBoxes(data.category); // Fetch boxes for the selected category
+      fetchExistingBoxes(data.category);
     }
   }, [data.category, allSubCategory]);
 
   useEffect(() => {
-    fetchHistory(); // Fetch history on component mount
+    fetchHistory();
   }, []);
 
   const fetchExistingBoxes = async (categoryId) => {
     try {
       const response = await Axios({
-        ...SummaryApi.getDamagedBoxes, // API to fetch damaged boxes
+        ...SummaryApi.getDamagedBoxes,
         data: { categoryId },
       });
 
       if (response.data.success) {
-        setExistingBoxes(response.data.data); // Example format: { "A1": 25, "A2": 10 }
+        setExistingBoxes(response.data.data);
       }
     } catch (error) {
       AxiosToastError(error);
@@ -56,7 +63,7 @@ const DamageProduct = () => {
 
   const fetchHistory = async () => {
     try {
-      const response = await Axios(SummaryApi.getDamageProducts); // Fetch history API
+      const response = await Axios(SummaryApi.getDamageProducts);
       if (response.data.success) {
         setHistory(response.data.data);
       }
@@ -81,59 +88,41 @@ const DamageProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    for (let box of data.boxes) {
-      const { boxNo, partsQty } = box;
-
-      if (!boxNo) {
-        alert("Please provide a valid box name.");
-        return;
-      }
-
-      const existingQty = existingBoxes[boxNo] || 0;
-
-      if (data.action === "Out") {
-        if (!existingBoxes[boxNo]) {
-          alert(`Box "${boxNo}" does not exist.`);
-          return;
-        }
-
-        if (existingQty < Number(partsQty)) {
-          alert(`Box "${boxNo}" is empty or does not have enough parts.`);
-          return;
-        }
-      }
-
-      // Update the local state to reflect the changes after successful submission
-      if (data.action === "Add") {
-        setExistingBoxes((prev) => ({
-          ...prev,
-          [boxNo]: existingQty + Number(partsQty),
-        }));
-      } else if (data.action === "Out") {
-        setExistingBoxes((prev) => ({
-          ...prev,
-          [boxNo]: existingQty - Number(partsQty),
-        }));
-      }
-    }
-
     try {
       const response = await Axios({
-        ...SummaryApi.handleDamageProduct, // Use appropriate endpoint
+        ...SummaryApi.handleDamageProduct,
         data,
       });
 
       if (response.data.success) {
         successAlert(response.data.message);
         setData({ category: "", subCategory: "", boxes: [], action: "Add" });
-        closeModal(); // Close the modal on successful submission
-        fetchHistory(); // Refresh history
-        fetchExistingBoxes(data.category); // Refresh the box data
+        closeModal();
+        fetchHistory();
+        fetchExistingBoxes(data.category);
       }
     } catch (error) {
       AxiosToastError(error);
     }
   };
+
+  const applyFilters = () => {
+    return history.filter((item) => {
+      return (
+        (!filters.date ||
+          new Date(item.createdAt).toISOString().split("T")[0] === filters.date) &&
+        (!filters.category || item.category?.name === filters.category) &&
+        (!filters.subCategory || item.subCategory?.name === filters.subCategory) &&
+        (!filters.box || item.boxNo === filters.box) &&
+        (!filters.action || item.action === filters.action)
+      );
+    });
+  };
+
+// Sort the filtered history to display the latest entry first
+const filteredHistory = applyFilters().sort(
+  (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+);
 
   return (
     <section className="bg-white">
@@ -149,12 +138,93 @@ const DamageProduct = () => {
           </button>
         </div>
 
+        {/* Filters */}
+        <div className="bg-gray-100 p-4 rounded mb-4">
+          <h3 className="font-semibold text-md mb-4">Filters</h3>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+              <label className="font-medium block mb-1">Date</label>
+              <input
+                type="date"
+                className="w-full p-2 border rounded"
+                value={filters.date}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, date: e.target.value }))
+                }
+              />
+            </div>
+            <div>
+              <label className="font-medium block mb-1">Category</label>
+              <select
+                className="w-full p-2 border rounded"
+                value={filters.category}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, category: e.target.value }))
+                }
+              >
+                <option value="">All Categories</option>
+                {allCategory.map((cat) => (
+                  <option key={cat._id} value={cat.name}>
+                    {cat.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="font-medium block mb-1">Subcategory</label>
+              <select
+                className="w-full p-2 border rounded"
+                value={filters.subCategory}
+                onChange={(e) =>
+                  setFilters((prev) => ({
+                    ...prev,
+                    subCategory: e.target.value,
+                  }))
+                }
+              >
+                <option value="">All Subcategories</option>
+                {allSubCategory.map((sub) => (
+                  <option key={sub._id} value={sub.name}>
+                    {sub.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="font-medium block mb-1">Box No</label>
+              <input
+                type="text"
+                className="w-full p-2 border rounded"
+                value={filters.box}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, box: e.target.value }))
+                }
+                placeholder="Enter Box No."
+              />
+            </div>
+            <div>
+              <label className="font-medium block mb-1">Action</label>
+              <select
+                className="w-full p-2 border rounded"
+                value={filters.action}
+                onChange={(e) =>
+                  setFilters((prev) => ({ ...prev, action: e.target.value }))
+                }
+              >
+                <option value="">All Actions</option>
+                <option value="Add">Add</option>
+                <option value="Out">Out</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
         {/* History Table */}
         <div className="mt-4 bg-gray-50 p-4 rounded shadow">
           <h3 className="font-semibold text-md mb-3">Damage Product History</h3>
           <table className="w-full border-collapse border border-gray-200">
             <thead>
-              <tr className="bg-blue-100">
+              <tr className="bg-blue-100 text-center">
                 <th className="border border-gray-200 p-2">Category Name</th>
                 <th className="border border-gray-200 p-2">Sub Category Name</th>
                 <th className="border border-gray-200 p-2">Box No</th>
@@ -164,9 +234,9 @@ const DamageProduct = () => {
               </tr>
             </thead>
             <tbody>
-              {history.length > 0 ? (
-                history.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-100">
+              {filteredHistory.length > 0 ? (
+                filteredHistory.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-100 text-center">
                     <td className="border border-gray-200 p-2">
                       {item.category?.name || "N/A"}
                     </td>
@@ -183,10 +253,7 @@ const DamageProduct = () => {
                 ))
               ) : (
                 <tr>
-                  <td
-                    className="border border-gray-200 p-2 text-center"
-                    colSpan={6}
-                  >
+                  <td colSpan={6} className="border border-gray-200 p-2 text-center">
                     No history available.
                   </td>
                 </tr>
@@ -209,11 +276,13 @@ const DamageProduct = () => {
               <form className="grid gap-4" onSubmit={handleSubmit}>
                 {/* Category */}
                 <div className="grid gap-1">
-                  <label className="font-medium">Caamera Category</label>
+                  <label className="font-medium">Camera Category</label>
                   <select
                     className="bg-blue-50 border w-full p-2 rounded"
                     value={data.category}
-                    onChange={(e) => setData({ ...data, category: e.target.value })}
+                    onChange={(e) =>
+                      setData({ ...data, category: e.target.value })
+                    }
                   >
                     <option value="">Select Camera</option>
                     {allCategory.map((cat) => (
@@ -230,7 +299,9 @@ const DamageProduct = () => {
                   <select
                     className="bg-blue-50 border w-full p-2 rounded"
                     value={data.subCategory}
-                    onChange={(e) => setData({ ...data, subCategory: e.target.value })}
+                    onChange={(e) =>
+                      setData({ ...data, subCategory: e.target.value })
+                    }
                     disabled={!filteredSubCategories.length}
                   >
                     <option value="">Select Part</option>
@@ -257,14 +328,18 @@ const DamageProduct = () => {
                         type="text"
                         placeholder="Box No."
                         value={box.boxNo}
-                        onChange={(e) => handleBoxChange(index, "boxNo", e.target.value)}
+                        onChange={(e) =>
+                          handleBoxChange(index, "boxNo", e.target.value)
+                        }
                         className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
                       />
                       <input
                         type="number"
                         placeholder="Parts Qty"
                         value={box.partsQty}
-                        onChange={(e) => handleBoxChange(index, "partsQty", e.target.value)}
+                        onChange={(e) =>
+                          handleBoxChange(index, "partsQty", e.target.value)
+                        }
                         className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
                       />
                     </div>
@@ -275,7 +350,10 @@ const DamageProduct = () => {
                     <span>Total Boxes: {data.boxes.length}</span>
                     <span>
                       Total Parts Quantity:{" "}
-                      {data.boxes.reduce((total, box) => total + Number(box.partsQty || 0), 0)}
+                      {data.boxes.reduce(
+                        (total, box) => total + Number(box.partsQty || 0),
+                        0
+                      )}
                     </span>
                   </div>
                 </div>
@@ -286,7 +364,9 @@ const DamageProduct = () => {
                   <select
                     className="bg-blue-50 border w-full p-2 rounded"
                     value={data.action}
-                    onChange={(e) => setData({ ...data, action: e.target.value })}
+                    onChange={(e) =>
+                      setData({ ...data, action: e.target.value })
+                    }
                   >
                     <option value="Add">Add</option>
                     <option value="Out">Out</option>
