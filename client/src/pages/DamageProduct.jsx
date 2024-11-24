@@ -18,6 +18,7 @@ const DamageProduct = () => {
 
   const [filteredSubCategories, setFilteredSubCategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false); // Modal visibility state
+  const [existingBoxes, setExistingBoxes] = useState({}); // Store the current state of boxes
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
@@ -29,8 +30,24 @@ const DamageProduct = () => {
       );
       setFilteredSubCategories(filtered);
       setData((prev) => ({ ...prev, subCategory: "", boxes: [] }));
+      fetchExistingBoxes(data.category); // Fetch boxes for the selected category
     }
   }, [data.category, allSubCategory]);
+
+  const fetchExistingBoxes = async (categoryId) => {
+    try {
+      const response = await Axios({
+        ...SummaryApi.getDamagedBoxes, // API to fetch damaged boxes
+        data: { categoryId },
+      });
+
+      if (response.data.success) {
+        setExistingBoxes(response.data.data); // Example format: { "A1": 25, "A2": 10 }
+      }
+    } catch (error) {
+      AxiosToastError(error);
+    }
+  };
 
   const handleAddBox = () => {
     setData((prev) => ({
@@ -48,6 +65,42 @@ const DamageProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    for (let box of data.boxes) {
+      const { boxNo, partsQty } = box;
+
+      if (!boxNo) {
+        alert("Please provide a valid box name.");
+        return;
+      }
+
+      const existingQty = existingBoxes[boxNo] || 0;
+
+      if (data.action === "Out") {
+        if (!existingBoxes[boxNo]) {
+          alert(`Box "${boxNo}" does not exist.`);
+          return;
+        }
+
+        if (existingQty < Number(partsQty)) {
+          alert(`Box "${boxNo}" is empty or does not have enough parts.`);
+          return;
+        }
+      }
+
+      // Update the local state to reflect the changes after successful submission
+      if (data.action === "Add") {
+        setExistingBoxes((prev) => ({
+          ...prev,
+          [boxNo]: existingQty + Number(partsQty),
+        }));
+      } else if (data.action === "Out") {
+        setExistingBoxes((prev) => ({
+          ...prev,
+          [boxNo]: existingQty - Number(partsQty),
+        }));
+      }
+    }
+
     try {
       const response = await Axios({
         ...SummaryApi.handleDamageProduct, // Use appropriate endpoint
@@ -58,6 +111,7 @@ const DamageProduct = () => {
         successAlert(response.data.message);
         setData({ category: "", subCategory: "", boxes: [], action: "Add" });
         closeModal(); // Close the modal on successful submission
+        fetchExistingBoxes(data.category); // Refresh the box data
       }
     } catch (error) {
       AxiosToastError(error);
@@ -147,9 +201,7 @@ const DamageProduct = () => {
                         type="number"
                         placeholder="Parts Qty"
                         value={box.partsQty}
-                        onChange={(e) =>
-                          handleBoxChange(index, "partsQty", e.target.value)
-                        }
+                        onChange={(e) => handleBoxChange(index, "partsQty", e.target.value)}
                         className="bg-blue-50 p-2 outline-none border focus-within:border-primary-200 rounded"
                       />
                     </div>
