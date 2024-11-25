@@ -1,17 +1,9 @@
-import { Router } from 'express';
-import auth from '../middleware/auth.js';
-import { admin } from '../middleware/Admin.js';
-import {
-  createReadyCamera,
-  getReadyCameraHistory,
-} from '../controllers/readycamera.controller.js';
+import express from "express";
+import { createReadyCamera, getReadyCameraHistory } from "../controllers/readycamera.controller.js";
 
-const readyCameraRouter = Router();
+const router = express.Router();
 
-// Create Ready Camera
-readyCameraRouter.post('/create', auth, admin, createReadyCamera);
+router.post("/create", createReadyCamera);
+router.get("/history", getReadyCameraHistory);
 
-// Get Ready Camera History
-readyCameraRouter.get('/history', auth, getReadyCameraHistory);
-
-export default readyCameraRouter;
+export default router;

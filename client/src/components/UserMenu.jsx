@@ -1,14 +1,14 @@
-import React, { useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Link, useNavigate } from 'react-router-dom';
-import Divider from './Divider';
-import Axios from '../utils/Axios';
-import SummaryApi from '../common/SummaryApi';
-import { logout } from '../store/userSlice';
-import toast from 'react-hot-toast';
-import AxiosToastError from '../utils/AxiosToastError';
+import React, { useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { Link, useNavigate } from "react-router-dom";
+import Divider from "./Divider";
+import Axios from "../utils/Axios";
+import SummaryApi from "../common/SummaryApi";
+import { logout } from "../store/userSlice";
+import toast from "react-hot-toast";
+import AxiosToastError from "../utils/AxiosToastError";
 import { HiOutlineExternalLink } from "react-icons/hi";
-import isAdmin from '../utils/isAdmin';
+import isAdmin from "../utils/isAdmin";
 
 const UserMenu = ({ close }) => {
   const user = useSelector((state) => state.user);
@@ -99,7 +99,7 @@ const UserMenu = ({ close }) => {
 
             <Link
               onClick={handleClose}
-              to={"/dashboard/ready-camera"} // Ready Camera Link
+              to={"/dashboard/ready-camera"}
               className="px-2 hover:bg-orange-200 py-1"
             >
               Ready Camera
@@ -120,11 +120,20 @@ const UserMenu = ({ close }) => {
             >
               Manage Damage Product
             </Link>
+
+            {/* Delivered Camera Link */}
+            {/* <Link
+              onClick={handleClose}
+              to={"/dashboard/delivered-camera"}
+              className="px-2 hover:bg-orange-200 py-1"
+            >
+              Delivered Camera
+            </Link> */}
           </>
         )}
 
         <button
-          onClick={() => setShowConfirmLogout(true)} // Open confirmation dialog
+          onClick={() => setShowConfirmLogout(true)}
           className="text-left px-2 hover:bg-orange-200 py-1"
         >
           Log Out
@@ -141,13 +150,13 @@ const UserMenu = ({ close }) => {
             </p>
             <div className="flex justify-between">
               <button
-                onClick={() => setShowConfirmLogout(false)} // Close modal
+                onClick={() => setShowConfirmLogout(false)}
                 className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
               >
                 No
               </button>
               <button
-                onClick={handleLogout} // Perform logout
+                onClick={handleLogout}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
                 Yes

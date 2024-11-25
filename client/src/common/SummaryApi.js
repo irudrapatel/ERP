@@ -178,6 +178,15 @@ const SummaryApi = {
         url: "/api/readycamera/history",
         method: "get",
     },
+      getReadyCameraBoxes: {
+        url: "/api/readycamera/boxes",
+        method: "get",
+    },
+    getReadyCameraBoxes: {
+        url: "/api/readycamera/boxes",
+        method: "get",
+    },
+    
 };
 
 export default SummaryApi;

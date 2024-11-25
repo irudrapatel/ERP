@@ -1,100 +1,115 @@
-import ReadyCameraModel from '../models/readycamera.model.js';
-import CategoryModel from '../models/category.model.js';
+import ReadyCameraModel from "../models/readycamera.model.js";
 
 export const createReadyCamera = async (req, res) => {
-    try {
-      const { category, boxes, description } = req.body;
-  
-      if (!category || !boxes || !Array.isArray(boxes) || boxes.length === 0) {
+  try {
+    const { category, boxes, description } = req.body;
+
+    if (!category || !Array.isArray(boxes) || boxes.length === 0) {
+      return res.status(400).json({
+        message: "Category and at least one box are required.",
+        success: false,
+      });
+    }
+
+    // Validate each box
+    for (const box of boxes) {
+      if (!box.boxNo || !Array.isArray(box.partUIDs) || box.partUIDs.length === 0) {
         return res.status(400).json({
-          message: 'Category and boxes are required.',
-          error: true,
+          message: "Each box must have a boxNo and at least one partUID.",
           success: false,
         });
       }
-  
-      for (const box of boxes) {
-        if (!box.boxNo || !box.partsQty) {
-          return res.status(400).json({
-            message: 'Each box must include boxNo and partsQty.',
-            error: true,
-            success: false,
-          });
-        }
-      }
-  
-      // Create a new ReadyCamera entry
-      const readyCamera = new ReadyCameraModel({
-        category,
-        boxes,
-        description,
-      });
-  
-      // Save the entry
-      const savedReadyCamera = await readyCamera.save();
-  
-      // Populate the category name and ID
-      const populatedReadyCamera = await ReadyCameraModel.findById(savedReadyCamera._id).populate(
-        'category',
-        'name _id'
-      );
-  
-      return res.status(200).json({
-        message: 'Ready Camera added successfully.',
-        data: populatedReadyCamera,
-        success: true,
-        error: false,
-      });
-    } catch (error) {
-      console.error('Error in createReadyCamera:', error);
-      return res.status(500).json({
-        message: error.message || error,
-        error: true,
-        success: false,
-      });
     }
-  };
 
-  export const getReadyCameraHistory = async (req, res) => {
-    try {
-      const history = await ReadyCameraModel.aggregate([
-        {
-          $lookup: {
-            from: 'categories', // The name of the collection in the database
-            localField: 'category',
-            foreignField: '_id',
-            as: 'categoryDetails',
-          },
+    // Save the ready camera details
+    const readyCamera = new ReadyCameraModel({
+      category,
+      boxes,
+      description,
+    });
+    await readyCamera.save();
+
+    res.status(201).json({
+      message: "Ready camera added successfully.",
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error in createReadyCamera:", error.message);
+    res.status(500).json({
+      message: "Failed to add ready camera.",
+      success: false,
+      error: true,
+    });
+  }
+};
+
+
+export const getReadyCameraHistory = async (req, res) => {
+  try {
+    const history = await ReadyCameraModel.aggregate([
+      {
+        $lookup: {
+          from: "categories",
+          localField: "category",
+          foreignField: "_id",
+          as: "categoryDetails",
         },
-        {
-          $unwind: {
-            path: '$categoryDetails', // Extract the first element of the array
-            preserveNullAndEmptyArrays: true, // Keep entries even if no match
-          },
+      },
+      { $unwind: "$categoryDetails" },
+      {
+        $project: {
+          _id: 1,
+          createdAt: 1,
+          category: "$categoryDetails.name",
+          boxes: 1,
         },
-        {
-          $project: {
-            _id: 1,
-            category: '$categoryDetails.name', // Use the category name from the joined document
-            totalQty: { $sum: '$boxes.partsQty' }, // Sum of partsQty
-            totalBoxes: { $size: '$boxes' }, // Count the number of boxes
-            createdAt: 1,
-          },
-        },
-      ]);
-  
-      return res.status(200).json({
-        message: 'History fetched successfully.',
-        data: history,
-        success: true,
-        error: false,
-      });
-    } catch (error) {
-      console.error('Error in getReadyCameraHistory:', error);
-      return res.status(500).json({
-        message: error.message || error,
-        error: true,
+      },
+    ]);
+
+    res.status(200).json({
+      message: "Ready camera history fetched successfully.",
+      data: history,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error in getReadyCameraHistory:", error.message);
+    res.status(500).json({
+      message: "Failed to fetch ready camera history.",
+      success: false,
+      error: true,
+    });
+  }
+};
+
+
+export const getReadyCameraBoxes = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+
+    if (!categoryId) {
+      return res.status(400).json({
+        message: "Category ID is required.",
         success: false,
       });
     }
-  };
+
+    const boxes = await ReadyCameraModel.find({ category: categoryId })
+      .select("boxes")
+      .lean();
+
+    const flattenedBoxes = boxes.flatMap((item) => item.boxes);
+
+    res.status(200).json({
+      message: "Ready camera boxes fetched successfully.",
+      data: flattenedBoxes,
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error in getReadyCameraBoxes:", error.message);
+    res.status(500).json({
+      message: "Failed to fetch ready camera boxes.",
+      success: false,
+      error: true,
+    });
+  }
+};
