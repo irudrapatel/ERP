@@ -97,13 +97,6 @@ const UserMenu = ({ close }) => {
               Inward Camera Part
             </Link>
 
-            <Link
-              onClick={handleClose}
-              to={"/dashboard/ready-camera"}
-              className="px-2 hover:bg-orange-200 py-1"
-            >
-              Ready Camera
-            </Link>
 
             <Link
               onClick={handleClose}
@@ -119,6 +112,14 @@ const UserMenu = ({ close }) => {
               className="px-2 hover:bg-orange-200 py-1"
             >
               Manage Damage Product
+            </Link>
+
+            <Link
+              onClick={handleClose}
+              to={"/dashboard/ready-camera"}
+              className="px-2 hover:bg-orange-200 py-1"
+            >
+              Ready Camera
             </Link>
 
             {/* Delivered Camera Link */}
