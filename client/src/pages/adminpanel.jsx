@@ -200,7 +200,9 @@ const Dashboard = () => {
                     >
                       <p>Code: {sub.code}</p>
                       <p>Total Available Boxes: {totalBoxes}</p>
-                      <p>Total Available Parts Qty: {totalPartsQty}</p>
+                      <p>
+                      Total Ready Parts: {totalPartsQty - totalDamagedParts}
+                    </p>
                       <p>Total Damaged Parts: {totalDamagedParts}</p> {/* New line */}
                     </div>
                   </div>
