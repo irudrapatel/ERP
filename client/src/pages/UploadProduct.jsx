@@ -32,17 +32,19 @@ const UploadProduct = () => {
   // Fetch upload history
   const fetchHistory = async () => {
     try {
-      const response = await Axios(SummaryApi.getProduct);
+      const response = await Axios(SummaryApi.getProduct); // Fetch all records
       if (response.data.success) {
         const fetchedData = response.data.data.map((item) => ({
           categoryName: item.category[0]?.name || "N/A",
           subCategoryName: item.subCategory[0]?.name || "N/A",
           subCategoryCode: item.subCategory[0]?.code || "N/A",
-          boxNo: item.boxes[0]?.boxNo || "N/A",
-          partsQty: item.boxes[0]?.partsQty || 0,
-          date: new Intl.DateTimeFormat("en-GB").format(new Date(item.createdAt)), // Format as DD/MM/YYYY
+          boxNo: item.boxes.map((box) => box.boxNo).join(", ") || "N/A",
+          partsQty: item.boxes.reduce((total, box) => total + box.partsQty, 0),
+          description: item.description || "N/A",
+          date: new Intl.DateTimeFormat("en-GB").format(new Date(item.createdAt)),
         }));
-        setHistory(fetchedData);
+        setHistory(fetchedData); // Store all records in state
+        console.log("Fetched History:", fetchedData); // Log history for debugging
       }
     } catch (error) {
       AxiosToastError(error);
@@ -50,22 +52,49 @@ const UploadProduct = () => {
   };
   
 
+  
+
   useEffect(() => {
     fetchHistory(); // Fetch history on component load
   }, []);
 
+  const handleFilterChange = (e) => {
+    const { name, value } = e.target;
+    setFilters((prev) => ({ ...prev, [name]: value }));
+    console.log("Updated Filters:", { ...filters, [name]: value });
+  };
+
+  
   // Apply filters to history
   const applyFilters = () => {
+    console.log("Filters:", filters); // Log the filters for debugging
     return history.filter((item) => {
-      return (
-        (!filters.date || item.date === new Intl.DateTimeFormat("en-GB").format(new Date(filters.date))) &&
-        (!filters.category || item.categoryName === filters.category) &&
-        (!filters.subCategory || item.subCategoryName === filters.subCategory) &&
-        (!filters.box || item.boxNo.toLowerCase().includes(filters.box.toLowerCase()))
-      );
+      // Convert filter date to the same format as item.date for comparison
+      const filterDate = filters.date
+        ? new Intl.DateTimeFormat("en-GB").format(new Date(filters.date))
+        : null;
+  
+      const matchesDate = !filterDate || item.date === filterDate;
+      const matchesCategory = !filters.category || item.categoryName.toLowerCase() === filters.category.toLowerCase();
+      const matchesSubCategory =
+        !filters.subCategory || item.subCategoryName.toLowerCase() === filters.subCategory.toLowerCase();
+      const matchesBox = !filters.box || item.boxNo.toLowerCase().includes(filters.box.toLowerCase());
+  
+      // Log each condition for debugging
+      console.log({
+        item,
+        matchesDate,
+        matchesCategory,
+        matchesSubCategory,
+        matchesBox,
+      });
+  
+      return matchesDate && matchesCategory && matchesSubCategory && matchesBox;
     });
   };
   
+  
+
   const filteredHistory = applyFilters();
 
   const handleChange = (e) => {
@@ -140,61 +169,79 @@ const UploadProduct = () => {
 
         {/* Filters */}
         <div className="bg-gray-100 p-4 rounded mb-4">
-          <h3 className="font-semibold text-md mb-4">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="font-medium block mb-1">Date</label>
-              <input
-                type="date"
-                className="w-full p-2 border rounded"
-                value={filters.date}
-                onChange={(e) => setFilters((prev) => ({ ...prev, date: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="font-medium block mb-1">Category</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={filters.category}
-                onChange={(e) => setFilters((prev) => ({ ...prev, category: e.target.value }))}
-              >
-                <option value="">All Categories</option>
-                {allCategory.map((cat) => (
-                  <option key={cat._id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="font-medium block mb-1">Sub Category</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={filters.subCategory}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, subCategory: e.target.value }))
-                }
-              >
-                <option value="">All Sub Categories</option>
-                {allSubCategory.map((sub) => (
-                  <option key={sub._id} value={sub.name}>
-                    {sub.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="font-medium block mb-1">Box No.</label>
-              <input
-                type="text"
-                className="w-full p-2 border rounded"
-                value={filters.box}
-                onChange={(e) => setFilters((prev) => ({ ...prev, box: e.target.value }))}
-                placeholder="Enter Box No."
-              />
-            </div>
+        <h3 className="font-semibold text-md mb-4">Filters</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Date Filter */}
+          <div>
+            <label className="font-medium block mb-1">Date</label>
+            <input
+              type="date"
+              className="w-full p-2 border rounded"
+              name="date"
+              value={filters.date}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, date: e.target.value }))
+              }
+            />
+          </div>
+          
+          {/* Category Filter */}
+          <div>
+            <label className="font-medium block mb-1">Category</label>
+            <select
+              className="w-full p-2 border rounded"
+              name="category"
+              value={filters.category}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, category: e.target.value }))
+              }
+            >
+              <option value="">All Categories</option>
+              {allCategory.map((cat) => (
+                <option key={cat._id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sub Category Filter */}
+          <div>
+            <label className="font-medium block mb-1">Sub Category</label>
+            <select
+              className="w-full p-2 border rounded"
+              name="subCategory"
+              value={filters.subCategory}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, subCategory: e.target.value }))
+              }
+            >
+              <option value="">All Sub Categories</option>
+              {allSubCategory.map((sub) => (
+                <option key={sub._id} value={sub.name}>
+                  {sub.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Box Number Filter */}
+          <div>
+            <label className="font-medium block mb-1">Box No.</label>
+            <input
+              type="text"
+              className="w-full p-2 border rounded"
+              name="box"
+              value={filters.box}
+              onChange={(e) =>
+                setFilters((prev) => ({ ...prev, box: e.target.value }))
+              }
+              placeholder="Enter Box No."
+            />
           </div>
         </div>
+      </div>
+
 
         {/* History Table */}
         <div className="mt-6">
@@ -208,29 +255,32 @@ const UploadProduct = () => {
                   <th className="border border-gray-300 px-4 py-2">Parts Code</th>
                   <th className="border border-gray-300 px-4 py-2">Box No.</th>
                   <th className="border border-gray-300 px-4 py-2">Qty</th>
+                  <th className="border border-gray-300 px-4 py-2">Description</th>
                   <th className="border border-gray-300 px-4 py-2">Date</th>
                 </tr>
               </thead>
               <tbody>
-                {filteredHistory.length > 0 ? (
-                  filteredHistory.map((item, index) => (
-                    <tr key={index} className="text-center">
-                      <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
-                      <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
-                      <td className="border border-gray-300 px-4 py-2">{item.subCategoryCode}</td>
-                      <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
-                      <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
-                      <td className="border border-gray-300 px-4 py-2">{item.date}</td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="6" className="text-center text-gray-500 border border-gray-300 px-4 py-2">
-                      No history available for the selected filters.
-                    </td>
+              {filteredHistory.length > 0 ? (
+                filteredHistory.map((item, index) => (
+                  <tr key={index} className="text-center">
+                    <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.subCategoryCode}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.description}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.date}</td>
                   </tr>
-                )}
-              </tbody>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="7" className="text-center text-gray-500 border border-gray-300 px-4 py-2">
+                    No history available.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+
             </table>
           </div>
         </div>

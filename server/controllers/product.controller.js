@@ -168,15 +168,7 @@ export const getProductByCategoryAndSubCategory = async (request, response) => {
 
 export const getProductController = async (request, response) => {
     try {
-        let { page, limit, search } = request.body;
-
-        if (!page) {
-            page = 1;
-        }
-
-        if (!limit) {
-            limit = 10;
-        }
+        const { search } = request.body; // Remove page and limit for no pagination
 
         const query = search
             ? {
@@ -186,24 +178,17 @@ export const getProductController = async (request, response) => {
               }
             : {};
 
-        const skip = (page - 1) * limit;
-
-        const [data, totalCount] = await Promise.all([
-            ProductModel.find(query)
-                .sort({ createdAt: -1 })
-                .skip(skip)
-                .limit(limit)
-                .populate('category subCategory'),
-            ProductModel.countDocuments(query),
-        ]);
+        // Fetch all records without limit or skip
+        const data = await ProductModel.find(query)
+            .sort({ createdAt: -1 }) // Sort by creation date (latest first)
+            .populate("category subCategory"); // Populate related fields
 
         return response.json({
             message: "Product data",
             error: false,
             success: true,
-            totalCount: totalCount,
-            totalNoPage: Math.ceil(totalCount / limit),
-            data: data,
+            totalCount: data.length, // Total number of records
+            data: data, // All data
         });
     } catch (error) {
         return response.status(500).json({
@@ -213,6 +198,7 @@ export const getProductController = async (request, response) => {
         });
     }
 };
+
 
 export const getProductDetails = async (request, response) => {
     try {
