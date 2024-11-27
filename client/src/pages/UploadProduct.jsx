@@ -14,6 +14,10 @@ const UploadProduct = () => {
   });
   const allCategory = useSelector((state) => state.product.allCategory);
   const allSubCategory = useSelector((state) => state.product.allSubCategory);
+  const [uploadedData, setUploadedData] = useState([]);
+  const [excelFile, setExcelFile] = useState(null);
+  const [isExcelModalOpen, setIsExcelModalOpen] = useState(false); // Upload Excel Modal
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false); // Verify Excel Modal
 
   const [selectCategory, setSelectCategory] = useState("");
   const [selectSubCategory, setSelectSubCategory] = useState("");
@@ -28,6 +32,109 @@ const UploadProduct = () => {
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+
+
+  const openExcelModal = () => setIsExcelModalOpen(true);
+  const closeExcelModal = () => setIsExcelModalOpen(false);
+
+  const openVerifyModal = () => setIsVerifyModalOpen(true);
+  const closeVerifyModal = () => setIsVerifyModalOpen(false);
+
+  const handleExcelUpload = async (e) => {
+    e.preventDefault();
+
+    if (!excelFile) {
+        alert("Please select an Excel file.");
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("excelFile", excelFile);
+
+    console.log("Uploading Excel File:", excelFile); // Debugging
+    console.log("FormData:", formData); // Debugging
+
+    try {
+        const response = await Axios.post("/api/product/upload-excel", formData, {
+            headers: { "Content-Type": "multipart/form-data" },
+        });
+
+        if (response.data.success) {
+            alert("Excel uploaded successfully");
+        } else {
+            alert(response.data.message || "Upload failed");
+        }
+    } catch (error) {
+        console.error("Error uploading Excel:", error);
+        alert("Error uploading file. Please try again.");
+    }
+};
+
+  
+
+  useEffect(() => {
+    if (isVerifyModalOpen) {
+      fetchVerificationData();
+    }
+  }, [isVerifyModalOpen]);
+
+  // Approve or Reject
+// Approve or Reject
+const handleApproval = async (index, action, remark = "") => {
+  try {
+      const row = uploadedData[index];
+
+      if (action === "Yes") {
+          // Approve logic: Mark as approved and remove from verify panel
+          const updatedData = uploadedData.filter((_, i) => i !== index);
+          setUploadedData(updatedData);
+
+          await Axios.post(SummaryApi.updateUploadStatus.url, {
+              id: row._id,
+              status: "Approved",
+              remark: "Approved",
+          });
+      } else {
+          // Handle rejection
+          const updatedData = [...uploadedData];
+          updatedData[index].remark = remark || "Rejected";
+          setUploadedData(updatedData);
+
+          await Axios.post(SummaryApi.updateUploadStatus.url, {
+              id: row._id,
+              status: "Rejected",
+              remark,
+          });
+      }
+  } catch (error) {
+      console.error("Error in handleApproval:", error);
+      alert("An error occurred. Please try again.");
+  }
+};
+
+
+  // Fetch Verification Data
+  const fetchVerificationData = async () => {
+    try {
+        const response = await Axios.get(SummaryApi.getUploadDetails.url, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`, // If using authentication
+            },
+        });
+
+        if (response.data.success) {
+            console.log("Fetched Upload Details:", response.data.data);
+            setUploadedData(response.data.data);
+        } else {
+            console.warn("No pending uploads found");
+        }
+    } catch (error) {
+        console.error("Error fetching verification data:", error.response?.data || error.message);
+    }
+};
+
+  
+
 
   // Fetch upload history
   const fetchHistory = async () => {
@@ -165,6 +272,20 @@ const UploadProduct = () => {
           >
             Upload Product
           </button>
+          {/* <div className="flex gap-2"> */}
+            <button
+              className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
+              onClick={openExcelModal}
+            >
+              Upload by Excel 
+            </button>
+            <button
+              className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600"
+              onClick={openVerifyModal}
+            >
+              Verify by Excel
+            </button>
+          {/* </div> */}
         </div>
 
         {/* Filters */}
@@ -419,6 +540,102 @@ const UploadProduct = () => {
             </div>
           </div>
         )}
+
+                {/* Upload Excel Modal */}
+                {isExcelModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
+              <button
+                className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold"
+                onClick={closeExcelModal}
+              >
+                ×
+              </button>
+              <h2 className="font-semibold text-lg mb-4">Upload by Excel</h2>
+              <form onSubmit={handleExcelUpload}>
+                <div>
+                  <label>Select Category</label>
+                  <select
+                    value={selectCategory}
+                    onChange={(e) => setSelectCategory(e.target.value)}
+                  >
+                    <option value="">Select Category</option>
+                    {allCategory.map((cat) => (
+                      <option key={cat._id} value={cat._id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label>Upload Excel File</label>
+                  <input
+                    type="file"
+                    accept=".xlsx, .xls"
+                    onChange={(e) => setExcelFile(e.target.files[0])}
+                  />
+                </div>
+
+                <button type="submit">Upload</button>
+              </form>
+
+            </div>
+          </div>
+        )}
+
+        {/* Verify Excel Modal */}
+        {isVerifyModalOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+            <div className="bg-white p-6 rounded shadow-lg w-full max-w-2xl relative">
+              <button
+                className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold"
+                onClick={closeVerifyModal}
+              >
+                ×
+              </button>
+              <h2 className="font-semibold text-lg mb-4">Verify Uploaded Excel Data</h2>
+              <div className="table-wrapper overflow-y-auto max-h-[400px]">
+                <table className="w-full border-collapse border border-gray-200">
+                  <thead>
+                    <tr className="bg-blue-50">
+                      <th className="border border-gray-300 px-4 py-2">Parts Name</th>
+                      <th className="border border-gray-300 px-4 py-2">Parts Code</th>
+                      <th className="border border-gray-300 px-4 py-2">Box No</th>
+                      <th className="border border-gray-300 px-4 py-2">Qty</th>
+                      <th className="border border-gray-300 px-4 py-2">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                {uploadedData.map((item, index) => (
+                  <tr key={index} className="bg-white">
+                    <td className="border border-gray-300 px-4 py-2">{item.partsName}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.partsCode}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
+                    <td className="border border-gray-300 px-4 py-2">{item.qty}</td>
+                    <td className="border border-gray-300 px-4 py-2">
+                      <button
+                        onClick={() => handleApproval(index, "Yes")}
+                        className="bg-green-500 text-white px-3 py-1 rounded"
+                      >
+                        Yes
+                      </button>
+                      <button
+                        onClick={() => handleApproval(index, "No", prompt("Enter remark:"))}
+                        className="bg-red-500 text-white px-3 py-1 rounded ml-2"
+                      >
+                        No
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
+
       </div>
     </section>
   );

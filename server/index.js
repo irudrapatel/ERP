@@ -13,10 +13,11 @@ import subCategoryRouter from './route/subCategory.route.js';
 import productRouter from './route/product.route.js';
 import outProductRouter from './route/outproduct.route.js';
 import damageProductRouter from './route/damageproduct.route.js';
-import readyCameraRouter from './route/readycamera.route.js'; // Import ReadyCamera Router
+import readyCameraRouter from './route/readycamera.route.js';
 
 const app = express();
 
+// Middlewares
 app.use(
   cors({
     credentials: true,
@@ -25,33 +26,36 @@ app.use(
 );
 app.use(express.json());
 app.use(cookieParser());
-app.use(morgan());
+app.use(morgan('dev')); // Use 'dev' to make the logs concise
 app.use(
   helmet({
     crossOriginResourcePolicy: false,
   })
 );
 
-const PORT = 8080 || process.env.PORT;
+// Port
+const PORT = process.env.PORT || 8080;
 
-app.get('/', (request, response) => {
-  // Server to client
-  response.json({
-    message: 'Server is running ' + PORT,
+// Test endpoint
+app.get('/', (req, res) => {
+  res.json({
+    message: `Server is running on port ${PORT}`,
   });
 });
 
+// Routes
 app.use('/api/user', userRouter);
 app.use('/api/category', categoryRouter);
 app.use('/api/file', uploadRouter);
 app.use('/api/subcategory', subCategoryRouter);
-app.use('/api/product', productRouter);
+app.use('/api/product', productRouter); // Product route is correctly configured here
 app.use('/api/outproduct', outProductRouter);
 app.use('/api/damageproduct', damageProductRouter);
-app.use('/api/readycamera', readyCameraRouter); // Add ReadyCamera Route
+app.use('/api/readycamera', readyCameraRouter);
 
+// Connect to the database and start the server
 connectDB().then(() => {
   app.listen(PORT, () => {
-    console.log('Server is running', PORT);
+    console.log(`Server is running on port ${PORT}`);
   });
 });

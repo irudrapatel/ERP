@@ -1,4 +1,161 @@
 import ProductModel from "../models/product.model.js";
+import ExcelUploadModel from "../models/excelUpload.model.js";
+import ExcelJS from "exceljs";
+import SummaryApi from "../config/apiConfig.js";
+import mongoose from "mongoose";
+
+// Upload Excel
+
+import axios from "axios";
+
+export const uploadExcel = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: "No file uploaded" });
+        }
+
+        // Fetch subcategories
+        const subCategoryResponse = await axios.post(`${SummaryApi.baseURL}${SummaryApi.getSubCategory.url}`);
+        if (!subCategoryResponse.data.success) {
+            return res.status(500).json({ success: false, message: "Failed to fetch subcategories" });
+        }
+        const subCategories = subCategoryResponse.data.data;
+
+        const workbook = new ExcelJS.Workbook();
+        await workbook.xlsx.load(req.file.buffer);
+        const worksheet = workbook.getWorksheet(1);
+
+        const rows = [];
+        const categoryId = new mongoose.Types.ObjectId(req.body.category || "673f2c9ba9bb346e501ecb93"); // Use `new`
+
+        worksheet.eachRow((row, index) => {
+            if (index === 1) return; // Skip header row
+
+            const partsName = row.getCell(2).text?.trim();
+            const partsCode = row.getCell(1).text?.trim();
+            const boxNo = row.getCell(3).text?.trim();
+            const qty = parseInt(row.getCell(4).text?.trim(), 10) || 0;
+
+            if (!partsName || !partsCode) {
+                console.warn(`Skipping row: missing partsName or partsCode: ${partsName}, ${partsCode}`);
+                return;
+            }
+
+            const matchedSubCategory = subCategories.find(
+                (sub) => sub.name.toLowerCase() === partsName.toLowerCase().trim()
+            );
+
+            if (!matchedSubCategory || !matchedSubCategory._id) {
+                console.warn(`No match found for partsName: ${partsName}`);
+                return;
+            }
+
+            console.log(`Matched SubCategory: ${matchedSubCategory._id} for partsName: ${partsName}`);
+
+            rows.push({
+                partsName,
+                partsCode,
+                boxNo,
+                qty,
+                category: categoryId, // Use the `ObjectId` instance
+                subCategory: new mongoose.Types.ObjectId(matchedSubCategory._id), // Ensure `new` is used
+                status: "Pending",
+                remark: "",
+            });
+        });
+
+        console.log("Rows to be saved:", rows); // Debugging
+
+        if (rows.length === 0) {
+            return res.status(400).json({ success: false, message: "No valid rows to save" });
+        }
+
+        const savedData = await ExcelUploadModel.insertMany(rows);
+        res.json({
+            success: true,
+            message: "Excel uploaded and data saved successfully",
+            data: savedData,
+        });
+    } catch (error) {
+        console.error("Error in uploadExcel:", error.message);
+        res.status(500).json({ success: false, message: "Error processing Excel file", error: error.message });
+    }
+};
+
+
+// Fetch Upload Details
+export const getUploadDetails = async (req, res) => {
+    try {
+        const data = await ExcelUploadModel.aggregate([
+            { $match: { status: "Pending" } },
+            {
+                $lookup: {
+                    from: "categories", // Collection name in MongoDB
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "category",
+                },
+            },
+            {
+                $lookup: {
+                    from: "subcategories", // Collection name in MongoDB
+                    localField: "subCategory",
+                    foreignField: "_id",
+                    as: "subCategory",
+                },
+            },
+            {
+                $addFields: {
+                    isValid: { $cond: { if: { $ne: ["$subCategory", []] }, then: true, else: false } },
+                },
+            },
+            {
+                $project: {
+                    partsCode: 1,
+                    partsName: 1,
+                    boxNo: 1,
+                    qty: 1,
+                    status: 1,
+                    remark: 1,
+                    "category.name": { $arrayElemAt: ["$category.name", 0] },
+                    "subCategory.name": { $arrayElemAt: ["$subCategory.name", 0] },
+                    "subCategory.code": { $arrayElemAt: ["$subCategory.code", 0] },
+                    isValid: 1,
+                },
+            },
+        ]);
+
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error("Error in getUploadDetails:", error.message);
+        res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+// Update Upload Status
+export const updateUploadStatus = async (req, res) => {
+    try {
+        const { id, status, remark } = req.body;
+
+        const update = { status };
+        if (status === "Rejected") {
+            update.remark = remark || "Rejected";
+        }
+
+        const updatedData = await ExcelUploadModel.findByIdAndUpdate(id, update, { new: true });
+
+        if (!updatedData) {
+            return res.status(404).json({ success: false, message: "Data not found for the provided ID" });
+        }
+
+        res.json({ success: true, message: "Status updated successfully", data: updatedData });
+    } catch (error) {
+        console.error("Error in updateUploadStatus:", error.message);
+        res.status(500).json({ success: false, message: "Error updating status", error: error.message });
+    }
+};
+
 
 export const createProductController = async (request, response) => {
     try {
