@@ -543,46 +543,62 @@ const handleApproval = async (index, action, remark = "") => {
 
                 {/* Upload Excel Modal */}
                 {isExcelModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
-              <button
-                className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold"
-                onClick={closeExcelModal}
-              >
-                ×
-              </button>
-              <h2 className="font-semibold text-lg mb-4">Upload by Excel</h2>
-              <form onSubmit={handleExcelUpload}>
-                <div>
-                  <label>Select Category</label>
-                  <select
-                    value={selectCategory}
-                    onChange={(e) => setSelectCategory(e.target.value)}
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                <div className="bg-white p-6 rounded shadow-lg w-full max-w-md relative">
+                  {/* Close Button */}
+                  <button
+                    className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold"
+                    onClick={closeExcelModal}
                   >
-                    <option value="">Select Category</option>
-                    {allCategory.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
+                    ×
+                  </button>
+                  
+                  {/* Modal Title */}
+                  <h2 className="font-semibold text-lg mb-4 text-center">Upload Products via Excel</h2>
+                  
+                  {/* Form Section */}
+                  <form onSubmit={handleExcelUpload} className="space-y-4">
+                    
+                    {/* Category Dropdown */}
+                    <div>
+                      <label className="block font-medium mb-1">Select Category</label>
+                      <select
+                        className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-300"
+                        value={selectCategory}
+                        onChange={(e) => setSelectCategory(e.target.value)}
+                      >
+                        <option value="">Select Category</option>
+                        {allCategory.map((cat) => (
+                          <option key={cat._id} value={cat._id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    {/* File Input */}
+                    <div>
+                      <label className="block font-medium mb-1">Upload Excel File</label>
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        onChange={(e) => setExcelFile(e.target.files[0])}
+                        className="block w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-300"
+                      />
+                    </div>
+                    
+                    {/* Submit Button */}
+                    <button
+                      type="submit"
+                      className="w-full bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 focus:outline-none focus:ring focus:ring-blue-300"
+                    >
+                      Upload
+                    </button>
+                  </form>
                 </div>
+              </div>
+            )}
 
-                <div>
-                  <label>Upload Excel File</label>
-                  <input
-                    type="file"
-                    accept=".xlsx, .xls"
-                    onChange={(e) => setExcelFile(e.target.files[0])}
-                  />
-                </div>
-
-                <button type="submit">Upload</button>
-              </form>
-
-            </div>
-          </div>
-        )}
 
         {/* Verify Excel Modal */}
         {isVerifyModalOpen && (
