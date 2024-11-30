@@ -3,6 +3,8 @@ import ExcelUploadModel from "../models/excelUpload.model.js";
 import ExcelJS from "exceljs";
 import SummaryApi from "../config/apiConfig.js";
 import mongoose from "mongoose";
+import CategoryModel from "../models/category.model.js";
+import SubCategoryModel from "../models/subCategory.model.js";
 
 // Upload Excel
 
@@ -14,7 +16,7 @@ export const uploadExcel = async (req, res) => {
             return res.status(400).json({ success: false, message: "No file uploaded" });
         }
 
-        // Fetch subcategories
+        // Fetch subcategories from external API
         const subCategoryResponse = await axios.post(`${SummaryApi.baseURL}${SummaryApi.getSubCategory.url}`);
         if (!subCategoryResponse.data.success) {
             return res.status(500).json({ success: false, message: "Failed to fetch subcategories" });
@@ -26,7 +28,7 @@ export const uploadExcel = async (req, res) => {
         const worksheet = workbook.getWorksheet(1);
 
         const rows = [];
-        const categoryId = new mongoose.Types.ObjectId(req.body.category || "673f2c9ba9bb346e501ecb93"); // Use `new`
+        const categoryId = new mongoose.Types.ObjectId(req.body.category || "673f2c9ba9bb346e501ecb93"); // Default category
 
         worksheet.eachRow((row, index) => {
             if (index === 1) return; // Skip header row
@@ -42,7 +44,7 @@ export const uploadExcel = async (req, res) => {
             }
 
             const matchedSubCategory = subCategories.find(
-                (sub) => sub.name.toLowerCase() === partsName.toLowerCase().trim()
+                (sub) => sub.name.toLowerCase() === partsName.toLowerCase()
             );
 
             if (!matchedSubCategory || !matchedSubCategory._id) {
@@ -50,21 +52,17 @@ export const uploadExcel = async (req, res) => {
                 return;
             }
 
-            console.log(`Matched SubCategory: ${matchedSubCategory._id} for partsName: ${partsName}`);
-
             rows.push({
                 partsName,
                 partsCode,
                 boxNo,
                 qty,
-                category: categoryId, // Use the `ObjectId` instance
-                subCategory: new mongoose.Types.ObjectId(matchedSubCategory._id), // Ensure `new` is used
+                category: categoryId,
+                subCategory: new mongoose.Types.ObjectId(matchedSubCategory._id),
                 status: "Pending",
                 remark: "",
             });
         });
-
-        console.log("Rows to be saved:", rows); // Debugging
 
         if (rows.length === 0) {
             return res.status(400).json({ success: false, message: "No valid rows to save" });
@@ -455,5 +453,199 @@ export const updateProductDetails = async (request, response) => {
             error: true,
             success: false,
         });
+    }
+};
+
+
+export const getAllUploadData = async (req, res) => {
+    try {
+        // Fetch all Excel upload data
+        const allData = await ExcelUploadModel.aggregate([
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "category",
+                },
+            },
+            {
+                $lookup: {
+                    from: "subcategories",
+                    localField: "subCategory",
+                    foreignField: "_id",
+                    as: "subCategory",
+                },
+            },
+            {
+                $project: {
+                    partsCode: 1,
+                    partsName: 1,
+                    boxNo: 1,
+                    qty: 1,
+                    status: 1,
+                    remark: 1,
+                    "category._id": { $arrayElemAt: ["$category._id", 0] }, // Extract only `_id`
+                    "subCategory._id": { $arrayElemAt: ["$subCategory._id", 0] }, // Extract only `_id`
+                    "category.name": { $arrayElemAt: ["$category.name", 0] },
+                    "subCategory.name": { $arrayElemAt: ["$subCategory.name", 0] },
+                },
+            },
+        ]);
+        
+
+        res.json({
+            success: true,
+            data,
+        });
+    } catch (error) {
+        console.error("Error in getAllUploadData:", error.message);
+        res.status(500).json({
+            success: false,
+            message: "Error fetching all upload data",
+            error: error.message,
+        });
+    }
+};
+
+// Store processed IDs in memory (Note: This will reset on server restart)
+const processedIds = new Set();
+
+export const processAndPostUploadData = async (req, res) => {
+    try {
+        // Fetch approved data
+        const approvedData = await ExcelUploadModel.aggregate([
+            { $match: { status: "Approved" } },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "category",
+                },
+            },
+            {
+                $lookup: {
+                    from: "subcategories",
+                    localField: "subCategory",
+                    foreignField: "_id",
+                    as: "subCategory",
+                },
+            },
+            {
+                $project: {
+                    partsCode: 1,
+                    partsName: 1,
+                    boxNo: 1,
+                    qty: 1,
+                    status: 1,
+                    remark: 1,
+                    _id: 1,
+                    "categoryId": { $arrayElemAt: ["$category._id", 0] },
+                    "subCategoryId": { $arrayElemAt: ["$subCategory._id", 0] },
+                    "categoryName": { $arrayElemAt: ["$category.name", 0] },
+                    "subCategoryName": { $arrayElemAt: ["$subCategory.name", 0] },
+                },
+            },
+        ]);
+
+        // Check the product collection to filter out already created products
+        const existingProducts = await ProductModel.find({}).select("category subCategory boxes.boxNo boxes.partsQty");
+
+        const unprocessedData = approvedData.filter((item) => {
+            return !existingProducts.some(
+                (product) =>
+                    product.category.includes(item.categoryId) &&
+                    product.subCategory.includes(item.subCategoryId) &&
+                    product.boxes.some((box) => box.boxNo === item.boxNo && box.partsQty === item.qty) // Added qty check
+            );
+        });
+
+        if (!unprocessedData.length) {
+            return res.json({ success: true, message: "No unprocessed data to push." });
+        }
+
+        // Format unprocessed data for product creation
+        const formattedData = unprocessedData.map((item) => ({
+            category: [item.categoryId],
+            subCategory: [item.subCategoryId],
+            boxes: [
+                {
+                    boxNo: item.boxNo,
+                    partsQty: item.qty,
+                },
+            ],
+            description: "",
+            publish: true,
+        }));
+
+        // Post unprocessed data to createProduct API
+        const postResults = [];
+        for (const product of formattedData) {
+            try {
+                const response = await axios.post(
+                    `${SummaryApi.baseURL}/api/product/create`,
+                    product,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${req.headers.authorization.split(" ")[1]}`,
+                        },
+                    }
+                );
+                postResults.push({ success: true, data: response.data });
+            } catch (error) {
+                console.error("Error posting to createProduct:", error.message);
+                postResults.push({ success: false, error: error.message });
+            }
+        }
+
+        // Return response
+        res.json({
+            success: true,
+            message: "Data processed and pushed successfully.",
+            postResults,
+        });
+    } catch (error) {
+        console.error("Error in processAndPostUploadData:", error.message);
+        res.status(500).json({ success: false, error: error.message });
+    }
+};
+
+
+
+
+const fixMissingReferences = async () => {
+    try {
+        const documents = await ExcelUploadModel.find();
+        for (const doc of documents) {
+            if (!doc.category || !doc.subCategory) {
+                console.warn(`Missing references for document: ${doc._id}`);
+
+                // Find matching category and subCategory by name
+                const matchedCategory = await CategoryModel.findOne({ name: doc.partsName });
+                const matchedSubCategory = await SubCategoryModel.findOne({ name: doc.partsName });
+
+                if (matchedCategory && matchedSubCategory) {
+                    doc.category = matchedCategory._id;
+                    doc.subCategory = matchedSubCategory._id;
+                    await doc.save();
+                    console.log(`Updated references for document: ${doc._id}`);
+                } else {
+                    console.warn(`No matches found for document: ${doc._id}`);
+                }
+            }
+        }
+        console.log("References updated successfully.");
+    } catch (error) {
+        console.error("Error updating references:", error.message);
+    }
+};
+
+export const fixReferencesHandler = async (req, res) => {
+    try {
+        await fixMissingReferences();
+        res.json({ success: true, message: "References fixed successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
     }
 };

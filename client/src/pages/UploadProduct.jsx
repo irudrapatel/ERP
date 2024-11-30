@@ -89,13 +89,25 @@ const handleApproval = async (index, action, remark = "") => {
           const updatedData = uploadedData.filter((_, i) => i !== index);
           setUploadedData(updatedData);
 
+          // Update upload status to "Approved"
           await Axios.post(SummaryApi.updateUploadStatus.url, {
               id: row._id,
               status: "Approved",
               remark: "Approved",
           });
+
+          // Automatically call the processUploadedData API
+          const processResponse = await Axios.get(SummaryApi.processUploadedData.url, {
+              headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          });
+
+          if (processResponse.data.success) {
+              alert("Data processed successfully.");
+          } else {
+              console.warn("Processing uploaded data failed:", processResponse.data.message);
+          }
       } else {
-          // Handle rejection
+          // Handle rejection logic
           const updatedData = [...uploadedData];
           updatedData[index].remark = remark || "Rejected";
           setUploadedData(updatedData);
@@ -111,6 +123,7 @@ const handleApproval = async (index, action, remark = "") => {
       alert("An error occurred. Please try again.");
   }
 };
+
 
 
   // Fetch Verification Data

@@ -13,7 +13,10 @@ import {
     updateProductDetails,
     uploadExcel,
     getUploadDetails, // Import the function
-    updateUploadStatus, // Import the function
+    updateUploadStatus,
+    getAllUploadData,
+    processAndPostUploadData,
+    fixReferencesHandler, // Import the function
   } from "../controllers/product.controller.js"; // Ensure the path to the controller is correct
 
 const productRouter = Router();
@@ -29,7 +32,7 @@ productRouter.post(
   uploadExcel // Controller function
 );
 
-productRouter.post('/create', auth, admin, createProductController);
+productRouter.post('/create', createProductController);
 productRouter.post('/get', getProductController);
 productRouter.post('/get-product-by-category', getProductByCategory);
 productRouter.post(
@@ -47,7 +50,16 @@ productRouter.delete('/delete-product', auth, admin, deleteProductDetails);
 // Search product
 productRouter.post('/search-product', searchProduct);
 
-productRouter.get("/get-upload-details", auth, admin, getUploadDetails); // Define the GET route
+productRouter.get("/get-upload-details", getUploadDetails);
+
 productRouter.post("/update-upload-status", auth, admin, updateUploadStatus); // Define the POST route
+
+productRouter.get("/get-all-upload-data", getAllUploadData); // Define a new GET route
+
+productRouter.get("/fix-references", fixReferencesHandler);
+productRouter.get("/process-upload-data", processAndPostUploadData);
+
+
+
 
 export default productRouter;

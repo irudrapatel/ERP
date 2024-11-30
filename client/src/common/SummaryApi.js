@@ -52,6 +52,15 @@ const SummaryApi = {
     uploadExcel: { url: "/api/product/upload-excel", method: "post" },
     getUploadDetails: { url: "/api/product/get-upload-details", method: "get" },
     updateUploadStatus: { url: "/api/product/update-upload-status", method: "post" },
+    getAllUploadData: { url: "/api/product/get-all-upload-data", method: "get" },
+    processUploadedData: { url: "/api/product/process-upload-data", method: "get" },
+    verifyExcelData: { url: "/api/product/verify-excel-data", method: "get" },
+    fetchDashboardData: { url: "/api/dashboard/data", method: "get" },
+    getAllUsers: { url: "/api/user/all", method: "get" },
+
+
+
+
 };
 
 export default SummaryApi;
