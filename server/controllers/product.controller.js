@@ -492,11 +492,11 @@ export const getAllUploadData = async (req, res) => {
                 },
             },
         ]);
-        
 
+        // Ensure `allData` is returned in the response
         res.json({
             success: true,
-            data,
+            data: allData, // Use `allData` instead of undefined `data`
         });
     } catch (error) {
         console.error("Error in getAllUploadData:", error.message);
@@ -507,6 +507,7 @@ export const getAllUploadData = async (req, res) => {
         });
     }
 };
+
 
 // Store processed IDs in memory (Note: This will reset on server restart)
 const processedIds = new Set();
@@ -647,5 +648,50 @@ export const fixReferencesHandler = async (req, res) => {
         res.json({ success: true, message: "References fixed successfully" });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
+export const getRejectedData = async (req, res) => {
+    try {
+        // Fetch rejected data
+        const rejectedData = await ExcelUploadModel.aggregate([
+            { $match: { status: "Rejected" } },
+            {
+                $lookup: {
+                    from: "categories",
+                    localField: "category",
+                    foreignField: "_id",
+                    as: "category",
+                },
+            },
+            {
+                $lookup: {
+                    from: "subcategories",
+                    localField: "subCategory",
+                    foreignField: "_id",
+                    as: "subCategory",
+                },
+            },
+            {
+                $project: {
+                    partsCode: 1,
+                    partsName: 1,
+                    boxNo: 1,
+                    qty: 1,
+                    remark: 1, // Include remark field
+                    "categoryName": { $arrayElemAt: ["$category.name", 0] },
+                    "subCategoryName": { $arrayElemAt: ["$subCategory.name", 0] },
+                },
+            },
+        ]);
+
+        res.json({
+            success: true,
+            data: rejectedData,
+        });
+    } catch (error) {
+        console.error("Error in getRejectedData:", error.message);
+        res.status(500).json({ success: false, message: "Error fetching rejected data", error: error.message });
     }
 };

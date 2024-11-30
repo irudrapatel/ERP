@@ -124,6 +124,35 @@ const handleApproval = async (index, action, remark = "") => {
   }
 };
 
+const fetchRejectedData = async () => {
+  try {
+      const response = await Axios.get(SummaryApi.getRejectedData.url, {
+          headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+      });
+
+      if (response.data.success) {
+          const rejectedData = response.data.data.map((item) => ({
+              categoryName: item.categoryName || "N/A",
+              subCategoryName: item.subCategoryName || "N/A",
+              subCategoryCode: "N/A", // Rejected data might not have a code
+              boxNo: item.boxNo || "N/A",
+              partsQty: item.qty || 0,
+              description: item.remark || "Rejected", // Show remark as description
+              date: new Intl.DateTimeFormat("en-GB").format(new Date()), // Use current date
+          }));
+
+          setHistory((prev) => [...prev, ...rejectedData]); // Append rejected data to history
+      } else {
+          console.warn("No rejected data found");
+      }
+  } catch (error) {
+      console.error("Error fetching rejected data:", error.response?.data || error.message);
+  }
+};
+
+
 
 
   // Fetch Verification Data
@@ -152,25 +181,49 @@ const handleApproval = async (index, action, remark = "") => {
   // Fetch upload history
   const fetchHistory = async () => {
     try {
-      const response = await Axios(SummaryApi.getProduct); // Fetch all records
-      if (response.data.success) {
-        const fetchedData = response.data.data.map((item) => ({
-          categoryName: item.category[0]?.name || "N/A",
-          subCategoryName: item.subCategory[0]?.name || "N/A",
-          subCategoryCode: item.subCategory[0]?.code || "N/A",
-          boxNo: item.boxes.map((box) => box.boxNo).join(", ") || "N/A",
-          partsQty: item.boxes.reduce((total, box) => total + box.partsQty, 0),
-          description: item.description || "N/A",
-          date: new Intl.DateTimeFormat("en-GB").format(new Date(item.createdAt)),
-        }));
-        setHistory(fetchedData); // Store all records in state
-        console.log("Fetched History:", fetchedData); // Log history for debugging
-      }
+        // Fetch approved/processed data
+        const productResponse = await Axios(SummaryApi.getProduct);
+        const productData = productResponse.data.success ? productResponse.data.data : [];
+
+        // Fetch rejected data
+        const rejectedResponse = await Axios.get(SummaryApi.getRejectedData.url, {
+            headers: {
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+        });
+        const rejectedData = rejectedResponse.data.success ? rejectedResponse.data.data : [];
+
+        // Format combined data
+        const combinedData = [
+            ...productData.map((item) => ({
+                categoryName: item.category[0]?.name || "N/A",
+                subCategoryName: item.subCategory[0]?.name || "N/A",
+                subCategoryCode: item.subCategory[0]?.code || "N/A",
+                boxNo: item.boxes.map((box) => box.boxNo).join(", ") || "N/A",
+                partsQty: item.boxes.reduce((total, box) => total + box.partsQty, 0),
+                description: item.description || "N/A",
+                date: new Intl.DateTimeFormat("en-GB").format(new Date(item.createdAt)),
+                partsCode: "", // No partsCode for approved products
+            })),
+            ...rejectedData.map((item) => ({
+                categoryName: item.categoryName || "N/A",
+                subCategoryName: item.subCategoryName || "N/A",
+                subCategoryCode: "", // No subCategoryCode for rejected products
+                boxNo: item.boxNo || "N/A",
+                partsQty: item.qty || 0,
+                description: item.remark || "Rejected",
+                date: new Intl.DateTimeFormat("en-GB").format(new Date(item.createdAt || Date.now())),
+                partsCode: item.partsCode || "N/A",
+            })),
+        ];
+
+        setHistory(combinedData);
+        console.log("Combined History Data:", combinedData);
     } catch (error) {
-      AxiosToastError(error);
+        console.error("Error fetching history:", error);
+        alert("Error fetching history. Please try again.");
     }
-  };
-  
+};
 
   
 
@@ -381,41 +434,50 @@ const handleApproval = async (index, action, remark = "") => {
         <div className="mt-6">
           <h3 className="font-semibold text-md mb-4">Upload Product History</h3>
           <div className="overflow-auto">
-            <table className="w-full border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-blue-50">
+          <table className="w-full border-collapse border border-gray-200">
+          <thead>
+              <tr className="bg-blue-50">
                   <th className="border border-gray-300 px-4 py-2">Camera Name</th>
                   <th className="border border-gray-300 px-4 py-2">Parts Name</th>
-                  <th className="border border-gray-300 px-4 py-2">Parts Code</th>
+                  <th className="border border-gray-300 px-4 py-2">Code</th>
                   <th className="border border-gray-300 px-4 py-2">Box No.</th>
                   <th className="border border-gray-300 px-4 py-2">Qty</th>
                   <th className="border border-gray-300 px-4 py-2">Description</th>
                   <th className="border border-gray-300 px-4 py-2">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-              {filteredHistory.length > 0 ? (
-                filteredHistory.map((item, index) => (
-                  <tr key={index} className="text-center">
-                    <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
-                    <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
-                    <td className="border border-gray-300 px-4 py-2">{item.subCategoryCode}</td>
-                    <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
-                    <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
-                    <td className="border border-gray-300 px-4 py-2">{item.description}</td>
-                    <td className="border border-gray-300 px-4 py-2">{item.date}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="7" className="text-center text-gray-500 border border-gray-300 px-4 py-2">
-                    No history available.
+              </tr>
+          </thead>
+          <tbody>
+            {filteredHistory.length > 0 ? (
+              filteredHistory.map((item, index) => (
+                <tr
+                  key={index}
+                  className={`text-center ${
+                    item.description.toLowerCase().includes("not") ? "bg-red-100" : ""
+                  }`}
+                >
+                  <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
+                  <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
+                  <td className="border border-gray-300 px-4 py-2">
+                    {item.subCategoryCode || item.partsCode || "N/A"}
                   </td>
+                  <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
+                  <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
+                  <td className="border border-gray-300 px-4 py-2">{item.description}</td>
+                  <td className="border border-gray-300 px-4 py-2">{item.date}</td>
                 </tr>
-              )}
-            </tbody>
-
-            </table>
+              ))
+            ) : (
+              <tr>
+                <td
+                  colSpan="7"
+                  className="text-center text-gray-500 border border-gray-300 px-4 py-2"
+                >
+                  No history available.
+                </td>
+              </tr>
+            )}
+          </tbody>
+      </table>
           </div>
         </div>
 
@@ -671,3 +733,5 @@ const handleApproval = async (index, action, remark = "") => {
 };
 
 export default UploadProduct;
+
+

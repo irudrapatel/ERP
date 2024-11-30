@@ -16,12 +16,14 @@ import {
     updateUploadStatus,
     getAllUploadData,
     processAndPostUploadData,
-    fixReferencesHandler, // Import the function
+    fixReferencesHandler,
+    getRejectedData, // Import the function
   } from "../controllers/product.controller.js"; // Ensure the path to the controller is correct
 
 const productRouter = Router();
 
 const upload = multer();
+
 
 // Route for uploading Excel files
 productRouter.post(
@@ -59,7 +61,7 @@ productRouter.get("/get-all-upload-data", getAllUploadData); // Define a new GET
 productRouter.get("/fix-references", fixReferencesHandler);
 productRouter.get("/process-upload-data", processAndPostUploadData);
 
-
+productRouter.get("/get-rejected-data", getRejectedData);
 
 
 export default productRouter;

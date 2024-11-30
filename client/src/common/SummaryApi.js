@@ -57,9 +57,7 @@ const SummaryApi = {
     verifyExcelData: { url: "/api/product/verify-excel-data", method: "get" },
     fetchDashboardData: { url: "/api/dashboard/data", method: "get" },
     getAllUsers: { url: "/api/user/all", method: "get" },
-
-
-
+    getRejectedData: { url: "/api/product/get-rejected-data", method: "get" },
 
 };
 
