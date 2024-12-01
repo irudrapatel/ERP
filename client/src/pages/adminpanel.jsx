@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useSelector } from "react-redux";
 import isAdmin from "../utils/isAdmin";
 import Axios from "../utils/Axios";
@@ -11,7 +11,7 @@ const Dashboard = () => {
   const [categories, setCategories] = useState([]);
   const [subCategories, setSubCategories] = useState([]);
   const [products, setProducts] = useState([]);
-  const [damagedProducts, setDamagedProducts] = useState([]); // For damaged products
+  const [damagedProducts, setDamagedProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
   const [zoomedImage, setZoomedImage] = useState(null);
   const [selectedDetails, setSelectedDetails] = useState(null);
@@ -29,14 +29,14 @@ const Dashboard = () => {
           Axios({ ...SummaryApi.getCategory }),
           Axios({ ...SummaryApi.getSubCategory }),
           Axios({ ...SummaryApi.getProduct }),
-          Axios({ ...SummaryApi.getDamageProducts }), // Fetch damaged products
+          Axios({ ...SummaryApi.getDamageProducts }),
         ]);
 
         if (categoriesResponse.data.success) setCategories(categoriesResponse.data.data);
         if (subCategoriesResponse.data.success) setSubCategories(subCategoriesResponse.data.data);
         if (productsResponse.data.success) setProducts(productsResponse.data.data);
         if (damagedProductsResponse.data.success)
-          setDamagedProducts(damagedProductsResponse.data.data); // Store damaged products
+          setDamagedProducts(damagedProductsResponse.data.data);
       } catch (error) {
         console.error("Error fetching data:", error);
       }
@@ -45,84 +45,75 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // Helper to calculate subcategory data
-  const getSubCategoryData = (subCategoryId) => {
-    // Filter products for this subcategory
-    const productData = products.filter((product) =>
-      product.subCategory.some((sub) => sub._id === subCategoryId)
-    );
-
-    // Calculate total boxes and parts quantity
-    const totalBoxes = productData.reduce(
-      (acc, product) => acc + (product.boxes?.length || 0),
-      0
-    );
-
-    const totalPartsQty = productData.reduce(
-      (acc, product) =>
-        acc +
-        product.boxes?.reduce((boxAcc, box) => boxAcc + Number(box.partsQty || 0), 0),
-      0
-    );
-
-    // Detailed boxes
-    const detailedBoxes = productData.flatMap((product) =>
-      product.boxes.map((box) => ({
-        boxNo: box.boxNo,
-        partsQty: box.partsQty,
-        action: box.partsQty > 0 ? "Add" : "Out",
-        dateAdded: product.updatedAt,
-      }))
-    );
-
-    return { totalBoxes, totalPartsQty, detailedBoxes };
-  };
-
+  // Memoized calculations
+  const filteredSubCategories = useMemo(
+    () =>
+      subCategories.filter((sub) =>
+        selectedCategory ? sub.category.some((cat) => cat._id === selectedCategory) : true
+      ),
+    [subCategories, selectedCategory]
+  );
 
   const calculatePossibleCameras = (categoryId) => {
-    // Filter subcategories under the current category
     const relatedSubCategories = subCategories.filter((sub) =>
       sub.category.some((cat) => cat._id === categoryId)
     );
-  
-    if (relatedSubCategories.length === 0) return 0;
-  
-    // Calculate possible cameras for each subcategory
+
+    if (!relatedSubCategories.length) return 0;
+
     const cameraCounts = relatedSubCategories.map((sub) => {
-      // Fetch the total parts available for the subcategory
       const totalPartsAvailable = getSubCategoryData(sub._id).totalPartsQty;
-  
-      // Fetch partsPerCamera from the subcategory
       const partsPerCamera = sub.partsPerCamera || 1;
-  
-      // Calculate possible cameras for this subcategory
       return Math.floor(totalPartsAvailable / partsPerCamera);
     });
-  
-    // The minimum count across all subcategories determines the total possible cameras
+
     return Math.min(...cameraCounts);
   };
-  
 
-  // Helper to calculate total damaged parts for a subcategory
+  const getSubCategoryData = useMemo(
+    () =>
+      (subCategoryId) => {
+        const productData = products.filter((product) =>
+          product.subCategory.some((sub) => sub._id === subCategoryId)
+        );
+
+        const totalBoxes = productData.reduce(
+          (acc, product) => acc + (product.boxes?.length || 0),
+          0
+        );
+
+        const totalPartsQty = productData.reduce(
+          (acc, product) =>
+            acc +
+            product.boxes?.reduce((boxAcc, box) => boxAcc + Number(box.partsQty || 0), 0),
+          0
+        );
+
+        const detailedBoxes = productData.flatMap((product) =>
+          product.boxes.map((box) => ({
+            boxNo: box.boxNo,
+            partsQty: box.partsQty,
+            action: box.partsQty > 0 ? "Add" : "Out",
+            dateAdded: product.updatedAt,
+          }))
+        );
+
+        return { totalBoxes, totalPartsQty, detailedBoxes };
+      },
+    [products]
+  );
+
   const getTotalDamagedParts = (subCategoryId) => {
     const damagedData = damagedProducts.filter(
       (damage) => damage.subCategory._id === subCategoryId
     );
 
-    const totalDamagedParts = damagedData.reduce((acc, damage) => {
+    return damagedData.reduce((acc, damage) => {
       if (damage.action === "Add") return acc + damage.quantity;
       if (damage.action === "Out") return acc - damage.quantity;
       return acc;
     }, 0);
-
-    return totalDamagedParts;
   };
-
-  // Filter subcategories based on selected category
-  const filteredSubCategories = subCategories.filter((sub) =>
-    selectedCategory ? sub.category.some((cat) => cat._id === selectedCategory) : true
-  );
 
   if (!isAdmin(user.role)) {
     return <div className="text-center text-red-600 font-bold py-10">Access Denied: Admins Only</div>;
@@ -138,11 +129,10 @@ const Dashboard = () => {
             return (
               <div key={category._id} className="bg-white shadow rounded-lg p-4">
                 <div className="flex items-center justify-center mb-4">
-                  {/* Category Image */}
                   <img
                     src={category.image}
                     alt={category.name}
-                    className="w-16 h-16 object-cover" // Removed `rounded-full`
+                    className="w-16 h-16 object-cover"
                   />
                 </div>
                 <h3 className="text-gray-600 text-center font-semibold text-lg mb-2">
@@ -180,7 +170,7 @@ const Dashboard = () => {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {filteredSubCategories.map((sub) => {
                 const { totalBoxes, totalPartsQty, detailedBoxes } = getSubCategoryData(sub._id);
-                const totalDamagedParts = getTotalDamagedParts(sub._id); // Get total damaged parts
+                const totalDamagedParts = getTotalDamagedParts(sub._id);
 
                 return (
                   <div
@@ -200,10 +190,8 @@ const Dashboard = () => {
                     >
                       <p>Code: {sub.code}</p>
                       <p>Total Available Boxes: {totalBoxes}</p>
-                      <p>
-                      Total Ready Parts: {totalPartsQty}
-                    </p>
-                      <p>Total Damaged Parts: {totalDamagedParts}</p> {/* New line */}
+                      <p>Total Ready Parts: {totalPartsQty}</p>
+                      <p>Total Damaged Parts: {totalDamagedParts}</p>
                     </div>
                   </div>
                 );
@@ -213,7 +201,8 @@ const Dashboard = () => {
             <p className="text-center text-gray-500">No subcategories found.</p>
           )}
         </div>
-     {/* Image Zoom Modal */}
+
+        {/* Image Zoom Modal */}
         {zoomedImage && (
           <div
             className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
@@ -228,7 +217,7 @@ const Dashboard = () => {
           </div>
         )}
 
-     {/* Details Modal */}
+        {/* Details Modal */}
         {selectedDetails && (
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-lg w-full">
@@ -238,7 +227,6 @@ const Dashboard = () => {
                   <tr className="bg-gray-100">
                     <th className="border border-gray-300 px-4 py-2">Box No.</th>
                     <th className="border border-gray-300 px-4 py-2">Parts Qty</th>
-                    {/* <th className="border border-gray-300 px-4 py-2">Action</th> */}
                     <th className="border border-gray-300 px-4 py-2">Date</th>
                   </tr>
                 </thead>
@@ -253,7 +241,6 @@ const Dashboard = () => {
                     </tr>
                   ))}
                 </tbody>
-
               </table>
               <button
                 className="mt-4 bg-blue-500 text-white py-2 px-4 rounded"
