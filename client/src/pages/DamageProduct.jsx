@@ -96,7 +96,7 @@ const DamageProduct = () => {
 
     try {
       const response = await Axios({
-        ...SummaryApi.handleDamageProduct,
+        ...SummaryApi.handleDamagesProduct,
         data,
       });
 

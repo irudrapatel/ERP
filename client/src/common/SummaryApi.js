@@ -44,7 +44,7 @@ const SummaryApi = {
     getOrderItems: { url: '/api/order/order-list', method: 'get' },
     addOutProduct: { url: '/api/outproduct/add', method: 'post' },
     getOutProduct: { url: '/api/outproduct/all', method: 'get' },
-    handleDamageProduct: { url: '/api/damageproduct/add-or-out', method: 'post' },
+    handleDamagesProduct: { url: '/api/damageproduct/add-or-out', method: 'post' },
     getDamageProducts: { url: '/api/damageproduct/all', method: 'get' },
     createReadyCamera: { url: "/api/readycamera/create", method: "post" },
     getReadyCameraHistory: { url: "/api/readycamera/history", method: "get" },
