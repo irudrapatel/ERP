@@ -201,7 +201,7 @@ const Dashboard = () => {
                       <p>Code: {sub.code}</p>
                       <p>Total Available Boxes: {totalBoxes}</p>
                       <p>
-                      Total Ready Parts: {totalPartsQty - totalDamagedParts}
+                      Total Ready Parts: {totalPartsQty}
                     </p>
                       <p>Total Damaged Parts: {totalDamagedParts}</p> {/* New line */}
                     </div>
