@@ -5,6 +5,7 @@ import SummaryApi from "../common/SummaryApi";
 import AxiosToastError from "../utils/AxiosToastError";
 import successAlert from "../utils/SuccessAlert";
 
+
 const UploadProduct = () => {
   const [data, setData] = useState({
     category: [],
@@ -332,18 +333,18 @@ const fetchRejectedData = async () => {
         {/* Header Section */}
         <div className="flex items-center justify-between bg-white shadow-md p-4 rounded mb-4">
           <h2 className="font-semibold text-lg">Inward Camera Part</h2>
-          <button
-            className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-            onClick={openModal}
-          >
-            Upload Product
-          </button>
-          {/* <div className="flex gap-2"> */}
+          <div className="flex gap-2">
+            <button
+              className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+              onClick={openModal}
+            >
+              Upload Parts
+            </button>
             <button
               className="bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600"
               onClick={openExcelModal}
             >
-              Upload by Excel 
+              Upload by Excel
             </button>
             <button
               className="bg-purple-500 text-white py-2 px-4 rounded hover:bg-purple-600"
@@ -351,9 +352,16 @@ const fetchRejectedData = async () => {
             >
               Verify by Excel
             </button>
-          {/* </div> */}
+            {/* Download Excel Template Button */}
+            <a
+              href="/ERP_Template.xlsx" // File is served from the public folder
+              download="ERP_Template.xlsx"
+              className="bg-teal-500 text-white py-2 px-4 rounded hover:bg-teal-600"
+            >
+              Download Template
+            </a>
+          </div>
         </div>
-
         {/* Filters */}
         <div className="bg-gray-100 p-4 rounded mb-4">
         <h3 className="font-semibold text-md mb-4">Filters</h3>
@@ -432,7 +440,7 @@ const fetchRejectedData = async () => {
 
         {/* History Table */}
         <div className="mt-6">
-          <h3 className="font-semibold text-md mb-4">Upload Product History</h3>
+          <h3 className="font-semibold text-md mb-4">Uploaded Parts History</h3>
           <div className="overflow-auto">
           <table className="w-full border-collapse border border-gray-200">
           <thead>
@@ -491,11 +499,11 @@ const fetchRejectedData = async () => {
               >
                 ×
               </button>
-              <h2 className="font-semibold text-lg mb-4">Upload Product</h2>
+              <h2 className="font-semibold text-lg mb-4">Upload Parts</h2>
               <form className="grid gap-4" onSubmit={handleSubmit}>
                 {/* Select Category */}
                 <div className="grid gap-1">
-                  <label className="font-medium">Camera Category</label>
+                  <label className="font-medium">Select Camera Category</label>
                   <select
                     className="bg-blue-50 border w-full p-2 rounded"
                     value={selectCategory}
@@ -629,14 +637,14 @@ const fetchRejectedData = async () => {
                   </button>
                   
                   {/* Modal Title */}
-                  <h2 className="font-semibold text-lg mb-4 text-center">Upload Products via Excel</h2>
+                  <h2 className="font-semibold text-lg mb-4">Upload Parts via Excel</h2>
                   
                   {/* Form Section */}
                   <form onSubmit={handleExcelUpload} className="space-y-4">
                     
                     {/* Category Dropdown */}
                     <div>
-                      <label className="block font-medium mb-1">Select Category</label>
+                      <label className="block font-medium mb-1">Select Camera Category</label>
                       <select
                         className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:ring focus:ring-blue-300"
                         value={selectCategory}
