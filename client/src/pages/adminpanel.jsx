@@ -159,121 +159,88 @@ const Dashboard = () => {
         Axios({ ...SummaryApi.getDamageProducts }),
       ]);
   
-      const products = productsResponse.data.data;
-      const outProducts = outProductsResponse.data.data;
-      const damageProducts = damageProductsResponse.data.data;
+      const products = productsResponse.data.data || [];
+      const outProducts = outProductsResponse.data.data || [];
+      const damageProducts = damageProductsResponse.data.data || [];
   
       const startDateFilter = startDate ? new Date(startDate) : null;
       const endDateFilter = endDate ? new Date(endDate) : null;
   
-      // Filter products by category
-      const filteredProducts = products.filter((product) =>
-        product.category.some((cat) => cat._id === categoryId)
-      );
-  
       const partsMap = {};
   
-      // Aggregate inward quantities
-      filteredProducts.forEach((product) => {
-        const subCategory = product.subCategory[0];
-        if (!subCategory) return;
+      // **Step 1: Aggregate Inward Quantities**
+      products.forEach((product) => {
+        product.subCategory.forEach((subCategory) => {
+          const subCategoryId = subCategory._id;
   
-        const subCategoryId = subCategory._id;
-  
-        if (!partsMap[subCategoryId]) {
-          partsMap[subCategoryId] = {
-            partsCode: subCategory.code,
-            partsName: subCategory.name,
-            inwardQty: 0,
-            outwardQty: 0,
-            damageQty: 0,
-            lastUpdated: null,
-          };
-        }
-  
-        // Filter based on date range
-        const productLastUpdated = new Date(product.updatedAt);
-        if (
-          (!startDateFilter || productLastUpdated >= startDateFilter) &&
-          (!endDateFilter || productLastUpdated <= endDateFilter)
-        ) {
-          const inwardQty = product.boxes.reduce((sum, box) => sum + box.partsQty, 0);
-          partsMap[subCategoryId].inwardQty += inwardQty;
-  
-          if (!partsMap[subCategoryId].lastUpdated || partsMap[subCategoryId].lastUpdated < productLastUpdated) {
-            partsMap[subCategoryId].lastUpdated = productLastUpdated;
+          if (!partsMap[subCategoryId]) {
+            partsMap[subCategoryId] = {
+              partsCode: subCategory.code,
+              partsName: subCategory.name,
+              inwardQty: 0,
+              outwardQty: 0,
+              damageQty: 0,
+              lastUpdated: null,
+            };
           }
+  
+          const productLastUpdated = new Date(product.updatedAt);
+          if (
+            (!startDateFilter || productLastUpdated >= startDateFilter) &&
+            (!endDateFilter || productLastUpdated <= endDateFilter)
+          ) {
+            const inwardQty = product.boxes.reduce((sum, box) => sum + box.partsQty, 0);
+            partsMap[subCategoryId].inwardQty += inwardQty;
+  
+            if (
+              !partsMap[subCategoryId].lastUpdated ||
+              partsMap[subCategoryId].lastUpdated < productLastUpdated
+            ) {
+              partsMap[subCategoryId].lastUpdated = productLastUpdated;
+            }
+          }
+        });
+      });
+  
+      // **Step 2: Aggregate Outward Quantities**
+      outProducts.forEach((out) => {
+        const subCategoryId = out.subCategory._id;
+  
+        if (!partsMap[subCategoryId]) return;
+  
+        const outDate = new Date(out.updatedAt);
+        if (
+          (!startDateFilter || outDate >= startDateFilter) &&
+          (!endDateFilter || outDate <= endDateFilter)
+        ) {
+          partsMap[subCategoryId].outwardQty += out.quantity;
         }
       });
   
-      // Aggregate outward and damage quantities
-      Object.values(partsMap).forEach((part) => {
-        const subCategoryId = Object.keys(partsMap).find(
-          (key) => partsMap[key].partsCode === part.partsCode
-        );
+      // **Step 3: Aggregate Damage Quantities**
+      damageProducts.forEach((damage) => {
+        const subCategoryId = damage.subCategory._id;
   
-        // Outward quantities
-        outProducts
-          .filter(
-            (out) =>
-              out.subCategory._id === subCategoryId &&
-              out.category._id === categoryId // Filter by category
-          )
-          .filter((out) => {
-            const outDate = new Date(out.updatedAt);
-            return (
-              (!startDateFilter || outDate >= startDateFilter) &&
-              (!endDateFilter || outDate <= endDateFilter)
-            );
-          })
-          .forEach((out) => {
-            part.outwardQty += out.quantity;
-          });
+        if (!partsMap[subCategoryId]) return;
   
-        // Damage quantities
-        damageProducts
-          .filter(
-            (damage) =>
-              damage.subCategory._id === subCategoryId &&
-              damage.category._id === categoryId // Filter by category
-          )
-          .filter((damage) => {
-            const damageDate = new Date(damage.updatedAt);
-            return (
-              (!startDateFilter || damageDate >= startDateFilter) &&
-              (!endDateFilter || damageDate <= endDateFilter)
-            );
-          })
-          .forEach((damage) => {
-            part.damageQty += damage.action === "Add" ? damage.quantity : -damage.quantity;
-          });
-  
-        // Update last updated date
-        const lastUpdatedDates = [
-          ...outProducts
-            .filter(
-              (out) =>
-                out.subCategory._id === subCategoryId &&
-                out.category._id === categoryId // Filter by category
-            )
-            .map((out) => new Date(out.updatedAt)),
-          ...damageProducts
-            .filter(
-              (damage) =>
-                damage.subCategory._id === subCategoryId &&
-                damage.category._id === categoryId // Filter by category
-            )
-            .map((damage) => new Date(damage.updatedAt)),
-        ];
-  
-        const maxDate = lastUpdatedDates.reduce(
-          (latest, date) => (date > latest ? date : latest),
-          part.lastUpdated
-        );
-        part.lastUpdated = maxDate;
+        const damageDate = new Date(damage.updatedAt);
+        if (
+          (!startDateFilter || damageDate >= startDateFilter) &&
+          (!endDateFilter || damageDate <= endDateFilter)
+        ) {
+          partsMap[subCategoryId].damageQty +=
+            damage.action === "Add" ? damage.quantity : -damage.quantity;
+        }
       });
   
-      const tableData = Object.values(partsMap).map((part) => ({
+      // **Step 4: Filter Data for Selected Category**
+      const filteredPartsMap = Object.values(partsMap).filter((part) =>
+        products.some((product) =>
+          product.subCategory.some((sub) => sub.code === part.partsCode && product.category.some((cat) => cat._id === categoryId))
+        )
+      );
+  
+      const tableData = filteredPartsMap.map((part) => ({
         ...part,
         lastUpdated: part.lastUpdated ? part.lastUpdated.toLocaleString() : "N/A",
       }));
@@ -285,6 +252,7 @@ const Dashboard = () => {
       console.error("Error fetching modal data:", error);
     }
   };
+  
   
 
   const applyDateFilter = () => {
