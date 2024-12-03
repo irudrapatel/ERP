@@ -19,6 +19,10 @@ const Dashboard = () => {
   const [totalPartsByCategory, setTotalPartsByCategory] = useState({});
   const [modalData, setModalData] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [startDate, setStartDate] = useState(""); // Start date for filtering
+  const [endDate, setEndDate] = useState(""); // End date for filtering
+  const [filteredModalData, setFilteredModalData] = useState([]);
+
 
   // Fetch data from APIs
   useEffect(() => {
@@ -159,6 +163,9 @@ const Dashboard = () => {
       const outProducts = outProductsResponse.data.data;
       const damageProducts = damageProductsResponse.data.data;
 
+      const startDateFilter = startDate ? new Date(startDate) : null;
+      const endDateFilter = endDate ? new Date(endDate) : null;
+
       // Filter and aggregate data
       const partsMap = {};
       products.forEach((product) => {
@@ -177,14 +184,20 @@ const Dashboard = () => {
           };
         }
 
-        // Add inward quantity
-        const inwardQty = product.boxes.reduce((sum, box) => sum + box.partsQty, 0);
-        partsMap[subCategoryId].inwardQty += inwardQty;
-
-        // Update last updated date
+        // Filter based on date range
         const productLastUpdated = new Date(product.updatedAt);
-        if (!partsMap[subCategoryId].lastUpdated || partsMap[subCategoryId].lastUpdated < productLastUpdated) {
-          partsMap[subCategoryId].lastUpdated = productLastUpdated;
+        if (
+          (!startDateFilter || productLastUpdated >= startDateFilter) &&
+          (!endDateFilter || productLastUpdated <= endDateFilter)
+        ) {
+          // Add inward quantity
+          const inwardQty = product.boxes.reduce((sum, box) => sum + box.partsQty, 0);
+          partsMap[subCategoryId].inwardQty += inwardQty;
+
+          // Update last updated date
+          if (!partsMap[subCategoryId].lastUpdated || partsMap[subCategoryId].lastUpdated < productLastUpdated) {
+            partsMap[subCategoryId].lastUpdated = productLastUpdated;
+          }
         }
       });
 
@@ -195,14 +208,32 @@ const Dashboard = () => {
         );
 
         // Add outward quantities
-        part.outwardQty += outProducts
+        outProducts
           .filter((out) => out.subCategory._id === subCategoryId)
-          .reduce((sum, out) => sum + out.quantity, 0);
+          .filter((out) => {
+            const outDate = new Date(out.updatedAt);
+            return (
+              (!startDateFilter || outDate >= startDateFilter) &&
+              (!endDateFilter || outDate <= endDateFilter)
+            );
+          })
+          .forEach((out) => {
+            part.outwardQty += out.quantity;
+          });
 
         // Add damage quantities
-        part.damageQty += damageProducts
+        damageProducts
           .filter((damage) => damage.subCategory._id === subCategoryId)
-          .reduce((sum, damage) => sum + (damage.action === "Add" ? damage.quantity : -damage.quantity), 0);
+          .filter((damage) => {
+            const damageDate = new Date(damage.updatedAt);
+            return (
+              (!startDateFilter || damageDate >= startDateFilter) &&
+              (!endDateFilter || damageDate <= endDateFilter)
+            );
+          })
+          .forEach((damage) => {
+            part.damageQty += damage.action === "Add" ? damage.quantity : -damage.quantity;
+          });
 
         // Update last updated date
         const lastUpdatedDates = [
@@ -230,6 +261,21 @@ const Dashboard = () => {
     } catch (error) {
       console.error("Error fetching modal data:", error);
     }
+  };
+
+  const applyDateFilter = () => {
+    const startDateFilter = startDate ? new Date(startDate) : null;
+    const endDateFilter = endDate ? new Date(endDate) : null;
+
+    const filteredData = modalData.filter((data) => {
+      const lastUpdated = new Date(data.lastUpdated);
+      return (
+        (!startDateFilter || lastUpdated >= startDateFilter) &&
+        (!endDateFilter || lastUpdated <= endDateFilter)
+      );
+    });
+
+    setFilteredModalData(filteredData);
   };
 
   const downloadExcel = () => {
@@ -289,6 +335,35 @@ const Dashboard = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-white rounded-lg p-6 max-w-4xl w-full h-[80vh] overflow-hidden flex flex-col">
               <h2 className="text-lg font-bold mb-4">Parts Summary</h2>
+
+              {/* Date Filter */}
+              <div className="flex gap-4 mb-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                  <input
+                    type="date"
+                    className="p-2 border rounded-md"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+                  <input
+                    type="date"
+                    className="p-2 border rounded-md"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                  />
+                </div>
+                <button
+                  className="self-end bg-blue-500 text-white px-4 py-2 rounded"
+                  onClick={applyDateFilter}
+                >
+                  Apply Filter
+                </button>
+              </div>
+
               <div className="overflow-auto flex-grow border border-gray-300 rounded-md">
                 <table className="table-auto w-full border-collapse">
                   <thead>
@@ -302,7 +377,7 @@ const Dashboard = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {modalData.map((data, index) => (
+                    {filteredModalData.map((data, index) => (
                       <tr key={index}>
                         <td className="border border-gray-300 px-4 py-2">{data.partsCode}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.partsName}</td>
@@ -315,6 +390,7 @@ const Dashboard = () => {
                   </tbody>
                 </table>
               </div>
+
               <div className="flex justify-end mt-4">
                 <button
                   className="mr-2 bg-green-500 text-white py-2 px-4 rounded"
@@ -332,7 +408,6 @@ const Dashboard = () => {
             </div>
           </div>
         )}
-
 
         {/* Category Filter */}
         <div className="mb-6">
