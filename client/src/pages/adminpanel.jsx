@@ -4,6 +4,7 @@ import isAdmin from "../utils/isAdmin";
 import Axios from "../utils/Axios";
 import SummaryApi from "../common/SummaryApi";
 import { combineBoxes } from "../utils";
+import { utils, writeFile } from "xlsx";
 
 const Dashboard = () => {
   const user = useSelector((state) => state.user);
@@ -16,6 +17,8 @@ const Dashboard = () => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const [selectedDetails, setSelectedDetails] = useState(null);
   const [totalPartsByCategory, setTotalPartsByCategory] = useState({});
+  const [modalData, setModalData] = useState([]);
+  const [showModal, setShowModal] = useState(false);
 
   // Fetch data from APIs
   useEffect(() => {
@@ -144,6 +147,106 @@ const Dashboard = () => {
     return <div className="text-center text-red-600 font-bold py-10">Access Denied: Admins Only</div>;
   }
 
+  const fetchModalData = async (categoryId) => {
+    try {
+      const [productsResponse, outProductsResponse, damageProductsResponse] = await Promise.all([
+        Axios({ ...SummaryApi.getProduct }),
+        Axios({ ...SummaryApi.getOutProduct }),
+        Axios({ ...SummaryApi.getDamageProducts }),
+      ]);
+
+      const products = productsResponse.data.data;
+      const outProducts = outProductsResponse.data.data;
+      const damageProducts = damageProductsResponse.data.data;
+
+      // Filter and aggregate data
+      const partsMap = {};
+      products.forEach((product) => {
+        const subCategory = product.subCategory[0];
+        if (!subCategory) return;
+
+        const subCategoryId = subCategory._id;
+        if (!partsMap[subCategoryId]) {
+          partsMap[subCategoryId] = {
+            partsCode: subCategory.code,
+            partsName: subCategory.name,
+            inwardQty: 0,
+            outwardQty: 0,
+            damageQty: 0,
+            lastUpdated: null,
+          };
+        }
+
+        // Add inward quantity
+        const inwardQty = product.boxes.reduce((sum, box) => sum + box.partsQty, 0);
+        partsMap[subCategoryId].inwardQty += inwardQty;
+
+        // Update last updated date
+        const productLastUpdated = new Date(product.updatedAt);
+        if (!partsMap[subCategoryId].lastUpdated || partsMap[subCategoryId].lastUpdated < productLastUpdated) {
+          partsMap[subCategoryId].lastUpdated = productLastUpdated;
+        }
+      });
+
+      // Add outward and damage quantities
+      Object.values(partsMap).forEach((part) => {
+        const subCategoryId = Object.keys(partsMap).find(
+          (key) => partsMap[key].partsCode === part.partsCode
+        );
+
+        // Add outward quantities
+        part.outwardQty += outProducts
+          .filter((out) => out.subCategory._id === subCategoryId)
+          .reduce((sum, out) => sum + out.quantity, 0);
+
+        // Add damage quantities
+        part.damageQty += damageProducts
+          .filter((damage) => damage.subCategory._id === subCategoryId)
+          .reduce((sum, damage) => sum + (damage.action === "Add" ? damage.quantity : -damage.quantity), 0);
+
+        // Update last updated date
+        const lastUpdatedDates = [
+          ...outProducts
+            .filter((out) => out.subCategory._id === subCategoryId)
+            .map((out) => new Date(out.updatedAt)),
+          ...damageProducts
+            .filter((damage) => damage.subCategory._id === subCategoryId)
+            .map((damage) => new Date(damage.updatedAt)),
+        ];
+        const maxDate = lastUpdatedDates.reduce(
+          (latest, date) => (date > latest ? date : latest),
+          part.lastUpdated
+        );
+        part.lastUpdated = maxDate;
+      });
+
+      const tableData = Object.values(partsMap).map((part) => ({
+        ...part,
+        lastUpdated: part.lastUpdated ? part.lastUpdated.toLocaleString() : "N/A",
+      }));
+
+      setModalData(tableData);
+      setShowModal(true);
+    } catch (error) {
+      console.error("Error fetching modal data:", error);
+    }
+  };
+
+  const downloadExcel = () => {
+    const worksheet = utils.json_to_sheet(modalData);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "Parts Summary");
+
+    // Download Excel file
+    writeFile(workbook, "Parts_Summary_Report.xlsx");
+  };
+
+  if (!isAdmin(user.role)) {
+    return <div className="text-center text-red-600 font-bold py-10">Access Denied: Admins Only</div>;
+  }
+  
+  
+  
   return (
     <section className="bg-white">
       <div className="container mx-auto p-3">
@@ -153,7 +256,11 @@ const Dashboard = () => {
             const possibleCameras = calculatePossibleCameras(category._id);
             const totalParts = totalPartsByCategory[category.name] || 0;
             return (
-              <div key={category._id} className="bg-white shadow rounded-lg p-4">
+              <div
+                key={category._id}
+                className="bg-white shadow rounded-lg p-4 cursor-pointer"
+                onClick={() => fetchModalData(category._id)}
+              >
                 <div className="flex items-center justify-center mb-4">
                   <img
                     src={category.image}
@@ -176,6 +283,56 @@ const Dashboard = () => {
             );
           })}
         </div>
+
+        {/* Modal for Table */}
+        {showModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-4xl w-full h-[80vh] overflow-hidden flex flex-col">
+              <h2 className="text-lg font-bold mb-4">Parts Summary</h2>
+              <div className="overflow-auto flex-grow border border-gray-300 rounded-md">
+                <table className="table-auto w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 sticky top-0 z-10">
+                      <th className="border border-gray-300 px-4 py-2">Parts Code</th>
+                      <th className="border border-gray-300 px-4 py-2">Parts Name</th>
+                      <th className="border border-gray-300 px-4 py-2">Inward Qty</th>
+                      <th className="border border-gray-300 px-4 py-2">Outward Qty</th>
+                      <th className="border border-gray-300 px-4 py-2">Damage Qty</th>
+                      <th className="border border-gray-300 px-4 py-2">Last Updated</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {modalData.map((data, index) => (
+                      <tr key={index}>
+                        <td className="border border-gray-300 px-4 py-2">{data.partsCode}</td>
+                        <td className="border border-gray-300 px-4 py-2">{data.partsName}</td>
+                        <td className="border border-gray-300 px-4 py-2">{data.inwardQty}</td>
+                        <td className="border border-gray-300 px-4 py-2">{data.outwardQty}</td>
+                        <td className="border border-gray-300 px-4 py-2">{data.damageQty}</td>
+                        <td className="border border-gray-300 px-4 py-2">{data.lastUpdated}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex justify-end mt-4">
+                <button
+                  className="mr-2 bg-green-500 text-white py-2 px-4 rounded"
+                  onClick={downloadExcel}
+                >
+                  Download Excel
+                </button>
+                <button
+                  className="bg-red-500 text-white py-2 px-4 rounded"
+                  onClick={() => setShowModal(false)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
 
         {/* Category Filter */}
         <div className="mb-6">

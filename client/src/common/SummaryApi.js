@@ -58,6 +58,11 @@ const SummaryApi = {
     fetchDashboardData: { url: "/api/dashboard/data", method: "get" },
     getAllUsers: { url: "/api/user/all", method: "get" },
     getRejectedData: { url: "/api/product/get-rejected-data", method: "get" },
+    getPartsSummary: {
+        url: '/api/adminpanel/parts-summary',
+        method: 'get',
+      },
+      
 
 };
 
