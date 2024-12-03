@@ -4,6 +4,7 @@ import Axios from "../utils/Axios";
 import SummaryApi from "../common/SummaryApi";
 import AxiosToastError from "../utils/AxiosToastError";
 import successAlert from "../utils/SuccessAlert";
+import { utils, writeFile } from "xlsx";
 
 const DamageProduct = () => {
   const allCategory = useSelector((state) => state.product.allCategory);
@@ -131,6 +132,30 @@ const filteredHistory = applyFilters().sort(
   (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
 );
 
+
+const downloadDamageHistory = () => {
+  if (filteredHistory.length === 0) {
+    alert("No data available to download.");
+    return;
+  }
+
+  // Map data to ensure proper names are displayed in Excel
+  const formattedData = filteredHistory.map((item) => ({
+    "Camera Name": item.category?.name || "N/A",
+    "Parts Name": item.subCategory?.name || "N/A",
+    "Box No.": item.boxNo || "N/A",
+    Quantity: item.quantity || 0,
+    Action: item.action || "N/A",
+    Date: item.formattedDate || "N/A",
+  }));
+
+  const worksheet = utils.json_to_sheet(formattedData);
+  const workbook = utils.book_new();
+  utils.book_append_sheet(workbook, worksheet, "DamageProductHistory");
+  writeFile(workbook, "Damage_Product_History.xlsx");
+};
+
+
   return (
     <section className="bg-white">
       <div className="container mx-auto p-4">
@@ -226,46 +251,54 @@ const filteredHistory = applyFilters().sort(
           </div>
         </div>
 
-        {/* History Table */}
-        <div className="mt-4 bg-gray-50 p-4 rounded shadow">
-          <h3 className="font-semibold text-md mb-3">Damage Product History</h3>
-          <table className="w-full border-collapse border border-gray-200">
-            <thead>
-              <tr className="bg-blue-100 text-center">
-                <th className="border border-gray-200 p-2">Camera Name</th>
-                <th className="border border-gray-200 p-2">Parts Name</th>
-                <th className="border border-gray-200 p-2">Box No</th>
-                <th className="border border-gray-200 p-2">Qty</th>
-                <th className="border border-gray-200 p-2">Action</th>
-                <th className="border border-gray-200 p-2">Date</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredHistory.length > 0 ? (
-                filteredHistory.map((item, index) => (
-                  <tr key={index} className="hover:bg-gray-100 text-center">
-                    <td className="border border-gray-200 p-2">
-                      {item.category?.name || "N/A"}
-                    </td>
-                    <td className="border border-gray-200 p-2">
-                      {item.subCategory?.name || "N/A"}
-                    </td>
-                    <td className="border border-gray-200 p-2">{item.boxNo}</td>
-                    <td className="border border-gray-200 p-2">{item.quantity}</td>
-                    <td className="border border-gray-200 p-2">{item.action}</td>
-                    <td className="border border-gray-200 p-2">{item.formattedDate}</td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan={6} className="border border-gray-200 p-2 text-center">
-                    No history available.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+{/* History Table */}
+<div className="mt-4 bg-gray-50 p-4 rounded shadow">
+  <div className="flex justify-between items-center mb-3">
+    <h3 className="font-semibold text-md">Damage Product History</h3>
+    <button
+      onClick={downloadDamageHistory} // Add your download function here
+      className="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600"
+    >
+      Download
+    </button>
+  </div>
+  <table className="w-full border-collapse border border-gray-200">
+    <thead>
+      <tr className="bg-blue-100 text-center">
+        <th className="border border-gray-200 p-2">Camera Name</th>
+        <th className="border border-gray-200 p-2">Parts Name</th>
+        <th className="border border-gray-200 p-2">Box No</th>
+        <th className="border border-gray-200 p-2">Qty</th>
+        <th className="border border-gray-200 p-2">Action</th>
+        <th className="border border-gray-200 p-2">Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {filteredHistory.length > 0 ? (
+        filteredHistory.map((item, index) => (
+          <tr key={index} className="hover:bg-gray-100 text-center">
+            <td className="border border-gray-200 p-2">
+              {item.category?.name || "N/A"}
+            </td>
+            <td className="border border-gray-200 p-2">
+              {item.subCategory?.name || "N/A"}
+            </td>
+            <td className="border border-gray-200 p-2">{item.boxNo}</td>
+            <td className="border border-gray-200 p-2">{item.quantity}</td>
+            <td className="border border-gray-200 p-2">{item.action}</td>
+            <td className="border border-gray-200 p-2">{item.formattedDate}</td>
+          </tr>
+        ))
+      ) : (
+        <tr>
+          <td colSpan={6} className="border border-gray-200 p-2 text-center">
+            No history available.
+          </td>
+        </tr>
+      )}
+    </tbody>
+  </table>
+</div>
 
         {/* Modal Section */}
         {isModalOpen && (

@@ -4,6 +4,7 @@ import Axios from "../utils/Axios";
 import SummaryApi from "../common/SummaryApi";
 import AxiosToastError from "../utils/AxiosToastError";
 import successAlert from "../utils/SuccessAlert";
+import { utils, writeFile } from "xlsx"; // Import XLSX for Excel generation 
 
 const ReadyCamera = () => {
   const allCategory = useSelector((state) => state.product.allCategory);
@@ -136,6 +137,32 @@ const ReadyCamera = () => {
     }
   };
 
+  const downloadReadyCameraHistory = () => {
+    if (filteredHistory.length === 0) {
+      alert("No data available to download.");
+      return;
+    }
+  
+    // Format data for Excel export
+    const formattedData = filteredHistory.flatMap((item) =>
+      item.boxes.map((box) => ({
+        "Category Name": item.categoryName || "N/A",
+        "Box No.": box.boxNo || "N/A",
+        "Part UID": box.partUIDs.join(", ") || "N/A", // Join UIDs as a single string
+        "Total Qty": box.totalParts || 0,
+        "Date": item.createdAt || "N/A",
+      }))
+    );
+  
+    // Create worksheet and workbook
+    const worksheet = utils.json_to_sheet(formattedData);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "ReadyCameraHistory");
+  
+    // Save Excel file
+    writeFile(workbook, "Ready_Camera_History.xlsx");
+  };
+
   return (
     <section className="bg-white">
       <div className="container mx-auto p-4">
@@ -185,63 +212,72 @@ const ReadyCamera = () => {
           </div>
         </div>
 
-        {/* History Table */}
-        <div className="mt-6">
-          <h3 className="font-semibold text-md mb-4">Ready Camera History</h3>
-          <div className="overflow-auto">
-            <table className="w-full border-collapse border border-gray-200">
-              <thead>
-                <tr className="bg-blue-50">
-                  <th className="border border-gray-300 px-4 py-2">Category Name</th>
-                  <th className="border border-gray-300 px-4 py-2">Box No.</th>
-                  <th className="border border-gray-300 px-4 py-2">Part UID</th>
-                  <th className="border border-gray-300 px-4 py-2">Total Qty</th>
-                  <th className="border border-gray-300 px-4 py-2">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredHistory.length > 0 ? (
-                  filteredHistory.map((item, index) =>
-                    item.boxes.map((box, boxIndex) => (
-                      <tr key={`${index}-${boxIndex}`} className="text-center">
-                        {boxIndex === 0 && (
-                          <td
-                            rowSpan={item.boxes.length}
-                            className="border border-gray-300 px-4 py-2 align-top"
-                          >
-                            {item.categoryName}
-                          </td>
-                        )}
-                        <td className="border border-gray-300 px-4 py-2">{box.boxNo}</td>
-                        <td className="border border-gray-300 px-4 py-2 whitespace-pre-wrap">
-                          {box.partUIDs.join("\n")}
-                        </td>
-                        <td className="border border-gray-300 px-4 py-2">{box.totalParts}</td>
-                        {boxIndex === 0 && (
-                          <td
-                            rowSpan={item.boxes.length}
-                            className="border border-gray-300 px-4 py-2 align-top"
-                          >
-                            {item.createdAt}
-                          </td>
-                        )}
-                      </tr>
-                    ))
-                  )
-                ) : (
-                  <tr>
-                    <td
-                      colSpan="5"
-                      className="text-center text-gray-500 border border-gray-300 px-4 py-2"
-                    >
-                      No history available.
-                    </td>
+          {/* History Table */}
+          <div className="mt-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="font-semibold text-md">Ready Camera History</h3>
+              <button
+                className="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600"
+                onClick={downloadReadyCameraHistory}
+              >
+                Download
+              </button>
+            </div>
+            <div className="overflow-auto">
+              <table className="w-full border-collapse border border-gray-200">
+                <thead>
+                  <tr className="bg-blue-50">
+                    <th className="border border-gray-300 px-4 py-2">Category Name</th>
+                    <th className="border border-gray-300 px-4 py-2">Box No.</th>
+                    <th className="border border-gray-300 px-4 py-2">Part UID</th>
+                    <th className="border border-gray-300 px-4 py-2">Total Qty</th>
+                    <th className="border border-gray-300 px-4 py-2">Date</th>
                   </tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {filteredHistory.length > 0 ? (
+                    filteredHistory.map((item, index) =>
+                      item.boxes.map((box, boxIndex) => (
+                        <tr key={`${index}-${boxIndex}`} className="text-center">
+                          {boxIndex === 0 && (
+                            <td
+                              rowSpan={item.boxes.length}
+                              className="border border-gray-300 px-4 py-2 align-top"
+                            >
+                              {item.categoryName}
+                            </td>
+                          )}
+                          <td className="border border-gray-300 px-4 py-2">{box.boxNo}</td>
+                          <td className="border border-gray-300 px-4 py-2 whitespace-pre-wrap">
+                            {box.partUIDs.join("\n")}
+                          </td>
+                          <td className="border border-gray-300 px-4 py-2">{box.totalParts}</td>
+                          {boxIndex === 0 && (
+                            <td
+                              rowSpan={item.boxes.length}
+                              className="border border-gray-300 px-4 py-2 align-top"
+                            >
+                              {item.createdAt}
+                            </td>
+                          )}
+                        </tr>
+                      ))
+                    )
+                  ) : (
+                    <tr>
+                      <td
+                        colSpan="5"
+                        className="text-center text-gray-500 border border-gray-300 px-4 py-2"
+                      >
+                        No history available.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
 
         {/* Modal */}
         {isModalOpen && (

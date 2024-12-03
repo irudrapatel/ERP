@@ -5,6 +5,7 @@ import SummaryApi from "../common/SummaryApi";
 import AxiosToastError from "../utils/AxiosToastError";
 import successAlert from "../utils/SuccessAlert";
 import { combineBoxes } from "../utils";
+import { utils, writeFile } from "xlsx"; // Import this if not already done
 
 const OutProduct = () => {
   const allCategory = useSelector((state) => state.product.allCategory);
@@ -157,6 +158,22 @@ const OutProduct = () => {
 
   const filteredHistory = applyFilters();
 
+
+  const downloadHistory = () => {
+    if (filteredHistory.length === 0) {
+      alert("No history available to download!");
+      return;
+    }
+  
+    // Convert filtered history into Excel format
+    const worksheet = utils.json_to_sheet(filteredHistory);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "History");
+  
+    // Download the file
+    writeFile(workbook, "Out_Parts_History.xlsx");
+  };
+
   return (
     <section className="bg-white">
       <div className="container mx-auto p-4">
@@ -231,7 +248,15 @@ const OutProduct = () => {
 
         {/* History Table */}
         <div className="mt-6">
-          <h3 className="font-semibold text-md mb-4">Out Product History</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-md">Out Product History</h3>
+            <button
+              onClick={downloadHistory} // Replace this with your download function
+              className="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600"
+            >
+              Download
+            </button>
+          </div>
           <div className="overflow-auto">
             <table className="w-full border-collapse border border-gray-200">
               <thead>
@@ -270,7 +295,8 @@ const OutProduct = () => {
             </table>
           </div>
         </div>
-      </div>
+        </div>
+
 
       {/* Modal Section */}
       {isModalOpen && (

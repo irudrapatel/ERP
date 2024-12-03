@@ -4,6 +4,7 @@ import Axios from "../utils/Axios";
 import SummaryApi from "../common/SummaryApi";
 import AxiosToastError from "../utils/AxiosToastError";
 import successAlert from "../utils/SuccessAlert";
+import { utils, writeFile } from "xlsx"; // Import this if not already done
 
 
 const UploadProduct = () => {
@@ -327,6 +328,23 @@ const fetchRejectedData = async () => {
     }
   };
 
+
+  const downloadHistory = () => {
+    if (filteredHistory.length === 0) {
+      alert("No history available to download!");
+      return;
+    }
+  
+    // Convert filtered history into Excel format
+    const worksheet = utils.json_to_sheet(filteredHistory);
+    const workbook = utils.book_new();
+    utils.book_append_sheet(workbook, worksheet, "History");
+  
+    // Download the file
+    writeFile(workbook, "Uploaded_Parts_History.xlsx");
+  };
+
+  
   return (
     <section className="bg-white">
       <div className="container mx-auto p-4">
@@ -440,11 +458,19 @@ const fetchRejectedData = async () => {
 
         {/* History Table */}
         <div className="mt-6">
-          <h3 className="font-semibold text-md mb-4">Uploaded Parts History</h3>
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="font-semibold text-md">Uploaded Parts History</h3>
+            <button
+              onClick={downloadHistory}
+              className="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600"
+            >
+              Download
+            </button>
+          </div>
           <div className="overflow-auto">
-          <table className="w-full border-collapse border border-gray-200">
-          <thead>
-              <tr className="bg-blue-50">
+            <table className="w-full border-collapse border border-gray-200">
+              <thead>
+                <tr className="bg-blue-50">
                   <th className="border border-gray-300 px-4 py-2">Camera Name</th>
                   <th className="border border-gray-300 px-4 py-2">Parts Name</th>
                   <th className="border border-gray-300 px-4 py-2">Code</th>
@@ -452,42 +478,43 @@ const fetchRejectedData = async () => {
                   <th className="border border-gray-300 px-4 py-2">Qty</th>
                   <th className="border border-gray-300 px-4 py-2">Description</th>
                   <th className="border border-gray-300 px-4 py-2">Date</th>
-              </tr>
-          </thead>
-          <tbody>
-            {filteredHistory.length > 0 ? (
-              filteredHistory.map((item, index) => (
-                <tr
-                  key={index}
-                  className={`text-center ${
-                    item.description.toLowerCase().includes("not") ? "bg-red-100" : ""
-                  }`}
-                >
-                  <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
-                  <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {item.subCategoryCode || item.partsCode || "N/A"}
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
-                  <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
-                  <td className="border border-gray-300 px-4 py-2">{item.description}</td>
-                  <td className="border border-gray-300 px-4 py-2">{item.date}</td>
                 </tr>
-              ))
-            ) : (
-              <tr>
-                <td
-                  colSpan="7"
-                  className="text-center text-gray-500 border border-gray-300 px-4 py-2"
-                >
-                  No history available.
-                </td>
-              </tr>
-            )}
-          </tbody>
-      </table>
+              </thead>
+              <tbody>
+                {filteredHistory.length > 0 ? (
+                  filteredHistory.map((item, index) => (
+                    <tr
+                      key={index}
+                      className={`text-center ${
+                        item.description.toLowerCase().includes("not") ? "bg-red-100" : ""
+                      }`}
+                    >
+                      <td className="border border-gray-300 px-4 py-2">{item.categoryName}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.subCategoryName}</td>
+                      <td className="border border-gray-300 px-4 py-2">
+                        {item.subCategoryCode || item.partsCode || "N/A"}
+                      </td>
+                      <td className="border border-gray-300 px-4 py-2">{item.boxNo}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.partsQty}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.description}</td>
+                      <td className="border border-gray-300 px-4 py-2">{item.date}</td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan="7"
+                      className="text-center text-gray-500 border border-gray-300 px-4 py-2"
+                    >
+                      No history available.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
+
 
         {/* Modal */}
         {isModalOpen && (
