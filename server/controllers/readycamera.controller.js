@@ -46,6 +46,7 @@ export const createReadyCamera = async (req, res) => {
 
 export const getReadyCameraHistory = async (req, res) => {
   try {
+    // Fetch ready camera data
     const history = await ReadyCameraModel.aggregate([
       {
         $lookup: {
@@ -57,18 +58,42 @@ export const getReadyCameraHistory = async (req, res) => {
       },
       { $unwind: "$categoryDetails" },
       {
+        $addFields: {
+          totalParts: {
+            $sum: {
+              $map: {
+                input: "$boxes",
+                as: "box",
+                in: { $size: "$$box.partUIDs" },
+              },
+            },
+          },
+        },
+      },
+      {
         $project: {
           _id: 1,
           createdAt: 1,
           category: "$categoryDetails.name",
           boxes: 1,
+          totalParts: 1, // Include total parts for each record
         },
       },
     ]);
 
+    // Calculate total parts by category
+    const totalPartsByCategory = history.reduce((acc, item) => {
+      if (!acc[item.category]) {
+        acc[item.category] = 0;
+      }
+      acc[item.category] += item.totalParts;
+      return acc;
+    }, {});
+
     res.status(200).json({
       message: "Ready camera history fetched successfully.",
       data: history,
+      totalPartsByCategory, // Add the total parts count grouped by category
       success: true,
     });
   } catch (error) {
@@ -80,7 +105,6 @@ export const getReadyCameraHistory = async (req, res) => {
     });
   }
 };
-
 
 export const getReadyCameraBoxes = async (req, res) => {
   try {
@@ -108,6 +132,53 @@ export const getReadyCameraBoxes = async (req, res) => {
     console.error("Error in getReadyCameraBoxes:", error.message);
     res.status(500).json({
       message: "Failed to fetch ready camera boxes.",
+      success: false,
+      error: true,
+    });
+  }
+};
+
+export const getReadyCameraStats = async (req, res) => {
+  try {
+    const { categoryId } = req.query;
+
+    if (!categoryId) {
+      return res.status(400).json({
+        message: "Category ID is required.",
+        success: false,
+      });
+    }
+
+    // Fetch ready cameras for the category
+    const readyCameras = await ReadyCameraModel.find({ category: categoryId }).lean();
+
+    let totalParts = 0;
+    let totalReadyCameras = 0;
+
+    // Calculate total parts and ready cameras
+    readyCameras.forEach((camera) => {
+      camera.boxes.forEach((box) => {
+        totalParts += box.partUIDs.length; // Assuming partUIDs represents the parts in a box
+        totalReadyCameras += 1; // Increment ready camera count for each camera
+      });
+    });
+
+    // Assume a logic for possible cameras
+    const possibleCameras = Math.floor(totalParts / 5); // Example: Each camera needs 5 parts
+
+    res.status(200).json({
+      message: "Camera stats fetched successfully.",
+      data: {
+        totalParts,
+        totalReadyCameras,
+        possibleCameras,
+      },
+      success: true,
+    });
+  } catch (error) {
+    console.error("Error in getReadyCameraStats:", error.message);
+    res.status(500).json({
+      message: "Failed to fetch camera stats.",
       success: false,
       error: true,
     });

@@ -15,6 +15,7 @@ const Dashboard = () => {
   const [selectedCategory, setSelectedCategory] = useState("");
   const [zoomedImage, setZoomedImage] = useState(null);
   const [selectedDetails, setSelectedDetails] = useState(null);
+  const [totalPartsByCategory, setTotalPartsByCategory] = useState({});
 
   // Fetch data from APIs
   useEffect(() => {
@@ -43,6 +44,30 @@ const Dashboard = () => {
     };
 
     fetchData();
+  }, []);
+
+  const fetchTotalPartsByCategory = async () => {
+    try {
+      const response = await Axios.get("/api/readycamera/history");
+      if (response.data.success) {
+        const partsCount = {};
+        response.data.data.forEach((record) => {
+          if (!partsCount[record.category]) {
+            partsCount[record.category] = 0;
+          }
+          record.boxes.forEach((box) => {
+            partsCount[record.category] += box.totalParts;
+          });
+        });
+        setTotalPartsByCategory(partsCount);
+      }
+    } catch (error) {
+      console.error("Error fetching total parts by category:", error);
+    }
+  };
+
+  useEffect(() => {
+    fetchTotalPartsByCategory();
   }, []);
 
   // Memoized calculations
@@ -126,6 +151,7 @@ const Dashboard = () => {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 mb-6">
           {categories.map((category) => {
             const possibleCameras = calculatePossibleCameras(category._id);
+            const totalParts = totalPartsByCategory[category.name] || 0;
             return (
               <div key={category._id} className="bg-white shadow rounded-lg p-4">
                 <div className="flex items-center justify-center mb-4">
@@ -139,7 +165,11 @@ const Dashboard = () => {
                   {category.name}
                 </h3>
                 <p className="text-center text-sm text-gray-500">
-                  Possible Cameras:{" "}
+                  Ready to delivery Camera:{" "}
+                  <span className="text-purple-500 font-bold text-xl">{totalParts}</span>
+                </p>
+                <p className="text-center text-sm text-gray-500">
+                  Possible to Make Cameras:{" "}
                   <span className="text-blue-500 font-bold text-xl">{possibleCameras}</span>
                 </p>
               </div>
