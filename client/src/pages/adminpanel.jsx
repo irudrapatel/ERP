@@ -158,21 +158,28 @@ const Dashboard = () => {
         Axios({ ...SummaryApi.getOutProduct }),
         Axios({ ...SummaryApi.getDamageProducts }),
       ]);
-
+  
       const products = productsResponse.data.data;
       const outProducts = outProductsResponse.data.data;
       const damageProducts = damageProductsResponse.data.data;
-
+  
       const startDateFilter = startDate ? new Date(startDate) : null;
       const endDateFilter = endDate ? new Date(endDate) : null;
-
-      // Filter and aggregate data
+  
+      // Filter products by category
+      const filteredProducts = products.filter((product) =>
+        product.category.some((cat) => cat._id === categoryId)
+      );
+  
       const partsMap = {};
-      products.forEach((product) => {
+  
+      // Aggregate inward quantities
+      filteredProducts.forEach((product) => {
         const subCategory = product.subCategory[0];
         if (!subCategory) return;
-
+  
         const subCategoryId = subCategory._id;
+  
         if (!partsMap[subCategoryId]) {
           partsMap[subCategoryId] = {
             partsCode: subCategory.code,
@@ -183,33 +190,35 @@ const Dashboard = () => {
             lastUpdated: null,
           };
         }
-
+  
         // Filter based on date range
         const productLastUpdated = new Date(product.updatedAt);
         if (
           (!startDateFilter || productLastUpdated >= startDateFilter) &&
           (!endDateFilter || productLastUpdated <= endDateFilter)
         ) {
-          // Add inward quantity
           const inwardQty = product.boxes.reduce((sum, box) => sum + box.partsQty, 0);
           partsMap[subCategoryId].inwardQty += inwardQty;
-
-          // Update last updated date
+  
           if (!partsMap[subCategoryId].lastUpdated || partsMap[subCategoryId].lastUpdated < productLastUpdated) {
             partsMap[subCategoryId].lastUpdated = productLastUpdated;
           }
         }
       });
-
-      // Add outward and damage quantities
+  
+      // Aggregate outward and damage quantities
       Object.values(partsMap).forEach((part) => {
         const subCategoryId = Object.keys(partsMap).find(
           (key) => partsMap[key].partsCode === part.partsCode
         );
-
-        // Add outward quantities
+  
+        // Outward quantities
         outProducts
-          .filter((out) => out.subCategory._id === subCategoryId)
+          .filter(
+            (out) =>
+              out.subCategory._id === subCategoryId &&
+              out.category._id === categoryId // Filter by category
+          )
           .filter((out) => {
             const outDate = new Date(out.updatedAt);
             return (
@@ -220,10 +229,14 @@ const Dashboard = () => {
           .forEach((out) => {
             part.outwardQty += out.quantity;
           });
-
-        // Add damage quantities
+  
+        // Damage quantities
         damageProducts
-          .filter((damage) => damage.subCategory._id === subCategoryId)
+          .filter(
+            (damage) =>
+              damage.subCategory._id === subCategoryId &&
+              damage.category._id === categoryId // Filter by category
+          )
           .filter((damage) => {
             const damageDate = new Date(damage.updatedAt);
             return (
@@ -234,34 +247,45 @@ const Dashboard = () => {
           .forEach((damage) => {
             part.damageQty += damage.action === "Add" ? damage.quantity : -damage.quantity;
           });
-
+  
         // Update last updated date
         const lastUpdatedDates = [
           ...outProducts
-            .filter((out) => out.subCategory._id === subCategoryId)
+            .filter(
+              (out) =>
+                out.subCategory._id === subCategoryId &&
+                out.category._id === categoryId // Filter by category
+            )
             .map((out) => new Date(out.updatedAt)),
           ...damageProducts
-            .filter((damage) => damage.subCategory._id === subCategoryId)
+            .filter(
+              (damage) =>
+                damage.subCategory._id === subCategoryId &&
+                damage.category._id === categoryId // Filter by category
+            )
             .map((damage) => new Date(damage.updatedAt)),
         ];
+  
         const maxDate = lastUpdatedDates.reduce(
           (latest, date) => (date > latest ? date : latest),
           part.lastUpdated
         );
         part.lastUpdated = maxDate;
       });
-
+  
       const tableData = Object.values(partsMap).map((part) => ({
         ...part,
         lastUpdated: part.lastUpdated ? part.lastUpdated.toLocaleString() : "N/A",
       }));
-
+  
       setModalData(tableData);
+      setFilteredModalData(tableData); // Initialize filtered data
       setShowModal(true);
     } catch (error) {
       console.error("Error fetching modal data:", error);
     }
   };
+  
 
   const applyDateFilter = () => {
     const startDateFilter = startDate ? new Date(startDate) : null;
