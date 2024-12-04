@@ -24,6 +24,7 @@ const ReadyCamera = () => {
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
+  const [submittedUIDs, setSubmittedUIDs] = useState([]);
 
   // Fetch upload history
   const fetchHistory = async () => {
@@ -39,12 +40,25 @@ const ReadyCamera = () => {
             totalParts: box.totalParts || 0,
           })),
         }));
+  
+        // Extract all submitted UIDs with Box No.
+        const allUIDs = fetchedData.flatMap((item) =>
+          item.boxes.flatMap((box) =>
+            box.partUIDs.map((uid) => ({
+              uid,
+              boxNo: box.boxNo,
+            }))
+          )
+        );
+  
+        setSubmittedUIDs(allUIDs); // Store submitted UIDs with Box Nos
         setHistory(fetchedData);
       }
     } catch (error) {
       AxiosToastError(error);
     }
   };
+  
 
   useEffect(() => {
     fetchHistory();
@@ -67,17 +81,38 @@ const ReadyCamera = () => {
 
   const handleBoxChange = (index, field, value, event) => {
     const updatedBoxes = [...data.boxes]; // Clone the boxes array
+    const uidRegex = /^[A-Za-z]{4}-\d{6}-[A-Za-z]{5}$/; // Regex for UID format
   
     if (field === "partUIDs") {
       if (event && event.key === "Enter") {
         event.preventDefault(); // Prevent Enter key's default action
         const trimmedValue = value.trim();
         if (trimmedValue) {
+          // Check for valid UID format
+          if (!uidRegex.test(trimmedValue)) {
+            alert(`Error: The UID "${trimmedValue}" is not in the correct format (AAAA-111111-AAAAA).`);
+            return; // Stop further processing
+          }
+  
+          const existingUIDs = updatedBoxes[index].partUIDs || [];
+  
+          // Check for duplicates in the current box
+          if (existingUIDs.includes(trimmedValue)) {
+            alert(`Error: The UID "${trimmedValue}" is already added in this box.`);
+            return; // Stop further processing
+          }
+  
+          // Check for duplicates in submitted UIDs
+          const duplicateInSubmitted = submittedUIDs.find((item) => item.uid === trimmedValue);
+          if (duplicateInSubmitted) {
+            alert(
+              `Error: The UID "${trimmedValue}" already exists in submitted Box No. "${duplicateInSubmitted.boxNo}".`
+            );
+            return; // Stop further processing
+          }
+  
           // Safely add new UID to the partUIDs array
-          updatedBoxes[index].partUIDs = [
-            ...(updatedBoxes[index].partUIDs || []),
-            trimmedValue,
-          ];
+          updatedBoxes[index].partUIDs = [...existingUIDs, trimmedValue];
           updatedBoxes[index].totalParts = updatedBoxes[index].partUIDs.length;
           updatedBoxes[index].inputValue = ""; // Clear input after adding
         }
@@ -95,17 +130,21 @@ const ReadyCamera = () => {
     }));
   };
   
+  
   const handleDeleteUID = (boxIndex, uidIndex) => {
-    const updatedBoxes = [...data.boxes];
-    updatedBoxes[boxIndex].partUIDs.splice(uidIndex, 1); // Remove the UID
-    updatedBoxes[boxIndex].totalParts = updatedBoxes[boxIndex].partUIDs.length; // Update total
-    setData((prev) => ({
-      ...prev,
-      boxes: updatedBoxes,
-    }));
-  };
+    setData((prev) => {
+      const updatedBoxes = [...prev.boxes]; // Clone the boxes array
+      updatedBoxes[boxIndex] = {
+        ...updatedBoxes[boxIndex], // Clone the specific box
+        partUIDs: updatedBoxes[boxIndex].partUIDs.filter((_, idx) => idx !== uidIndex), // Remove the UID by index
+      };
+      updatedBoxes[boxIndex].totalParts = updatedBoxes[boxIndex].partUIDs.length; // Update the total count
+      return { ...prev, boxes: updatedBoxes }; // Update the state with modified boxes
+    });
+  };  
   
   
+  // ________________________________
 
   const handleAddBox = () => {
     setData((prev) => ({
@@ -122,13 +161,13 @@ const ReadyCamera = () => {
     try {
       const response = await Axios({
         ...SummaryApi.createReadyCamera,
-        data: data,
+        data: data, // Use the state data for submission
       });
       if (response.data.success) {
         successAlert(response.data.message);
-        setData({ category: "", boxes: [], description: "" });
-        setIsModalOpen(false);
-        fetchHistory();
+        setData({ category: "", boxes: [], description: "" }); // Reset data
+        setIsModalOpen(false); // Close modal
+        fetchHistory(); // Refresh the history
       }
     } catch (error) {
       const errorMessage =
@@ -136,7 +175,7 @@ const ReadyCamera = () => {
       AxiosToastError(new Error(errorMessage));
     }
   };
-
+  
   const downloadReadyCameraHistory = () => {
     if (filteredHistory.length === 0) {
       alert("No data available to download.");
@@ -163,6 +202,7 @@ const ReadyCamera = () => {
     writeFile(workbook, "Ready_Camera_History.xlsx");
   };
 
+  
   return (
     <section className="bg-white">
       <div className="container mx-auto p-4">
@@ -345,7 +385,7 @@ const ReadyCamera = () => {
                           handleBoxChange(index, "partUIDs", e.target.value)
                         }
                         className="w-full p-1 border rounded" // Adjusted padding for a smaller textarea
-                        rows={2} // Reduced number of rows for smaller height
+                        rows={1} // Reduced number of rows for smaller height
                         style={{ whiteSpace: "pre-wrap" }} // Preserve newlines
                       ></textarea>
                       <div className="text-sm text-gray-600 mt-1">
@@ -358,7 +398,10 @@ const ReadyCamera = () => {
                             <strong>{data.boxes[index].totalParts || 0}</strong>
                           </div>
                         </div>
-                        <ul className="mt-2 space-y-1">
+                        <ul
+                          className="mt-2 space-y-1 overflow-y-auto" // Add overflow-y-auto for vertical scrolling
+                          style={{ maxHeight: "7.5rem" }} // Adjust the max height based on line height
+                        >
                           {(data.boxes[index].partUIDs || []).map((uid, uidIndex) => (
                             <li
                               key={uidIndex}
@@ -367,7 +410,8 @@ const ReadyCamera = () => {
                               <span className="text-sm text-gray-700">{uid}</span>
                               <button
                                 className="text-red-500 hover:text-red-700 text-xs"
-                                onClick={() => handleDeleteUID(index, uidIndex)}
+                                type="button" // Ensures it doesn't trigger form submission
+                                onClick={() => handleDeleteUID(index, uidIndex)} // Only remove UID
                               >
                                 ✖
                               </button>
@@ -404,6 +448,7 @@ const ReadyCamera = () => {
               <button
                 type="submit"
                 className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                onClick={handleSubmit} // Submission happens only here
               >
                 Submit
               </button>
