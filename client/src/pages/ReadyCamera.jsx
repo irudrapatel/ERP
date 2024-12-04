@@ -21,10 +21,14 @@ const ReadyCamera = () => {
     date: "",
     category: "",
   });
+  const ITEMS_PER_PAGE = 5; // Number of items per page
+  const [currentPage, setCurrentPage] = useState(1); // Track the current page
 
   const openModal = () => setIsModalOpen(true);
   const closeModal = () => setIsModalOpen(false);
   const [submittedUIDs, setSubmittedUIDs] = useState([]);
+
+
 
   // Fetch upload history
   const fetchHistory = async () => {
@@ -65,18 +69,20 @@ const ReadyCamera = () => {
   }, []);
 
   const applyFilters = () => {
-    return history.filter((item) => {
-      const formattedDate = filters.date
-        ? new Intl.DateTimeFormat("en-GB").format(new Date(filters.date))
-        : null;
-
-      const matchesDate = !filters.date || item.createdAt === formattedDate;
-      const matchesCategory = !filters.category || item.categoryName === filters.category;
-
-      return matchesDate && matchesCategory;
-    });
+    return history
+      .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)) // Sort by date (newest first)
+      .filter((item) => {
+        const formattedDate = filters.date
+          ? new Intl.DateTimeFormat("en-GB").format(new Date(filters.date))
+          : null;
+  
+        const matchesDate = !filters.date || item.createdAt === formattedDate;
+        const matchesCategory = !filters.category || item.categoryName === filters.category;
+  
+        return matchesDate && matchesCategory;
+      });
   };
-
+  
   const filteredHistory = applyFilters();
 
   const handleBoxChange = (index, field, value, event) => {
@@ -202,6 +208,19 @@ const ReadyCamera = () => {
     writeFile(workbook, "Ready_Camera_History.xlsx");
   };
 
+  const totalPages = Math.ceil(filteredHistory.length / ITEMS_PER_PAGE);
+
+  const paginatedHistory = filteredHistory.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+  
+  const handlePageChange = (newPage) => {
+    if (newPage >= 1 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+
   
   return (
     <section className="bg-white">
@@ -274,49 +293,71 @@ const ReadyCamera = () => {
                     <th className="border border-gray-300 px-4 py-2">Date</th>
                   </tr>
                 </thead>
-                <tbody>
-                  {filteredHistory.length > 0 ? (
-                    filteredHistory.map((item, index) =>
-                      item.boxes.map((box, boxIndex) => (
-                        <tr key={`${index}-${boxIndex}`} className="text-center">
-                          {boxIndex === 0 && (
-                            <td
-                              rowSpan={item.boxes.length}
-                              className="border border-gray-300 px-4 py-2 align-top"
-                            >
-                              {item.categoryName}
+                  <tbody>
+                    {paginatedHistory.length > 0 ? (
+                      paginatedHistory.map((item, index) =>
+                        item.boxes.map((box, boxIndex) => (
+                          <tr key={`${index}-${boxIndex}`} className="text-center">
+                            {boxIndex === 0 && (
+                              <td
+                                rowSpan={item.boxes.length}
+                                className="border border-gray-300 px-4 py-2 align-top"
+                              >
+                                {item.categoryName}
+                              </td>
+                            )}
+                            <td className="border border-gray-300 px-4 py-2">{box.boxNo}</td>
+                            <td className="border border-gray-300 px-4 py-2 whitespace-pre-wrap">
+                              {box.partUIDs.join("\n")}
                             </td>
-                          )}
-                          <td className="border border-gray-300 px-4 py-2">{box.boxNo}</td>
-                          <td className="border border-gray-300 px-4 py-2 whitespace-pre-wrap">
-                            {box.partUIDs.join("\n")}
-                          </td>
-                          <td className="border border-gray-300 px-4 py-2">{box.totalParts}</td>
-                          {boxIndex === 0 && (
-                            <td
-                              rowSpan={item.boxes.length}
-                              className="border border-gray-300 px-4 py-2 align-top"
-                            >
-                              {item.createdAt}
-                            </td>
-                          )}
-                        </tr>
-                      ))
-                    )
-                  ) : (
-                    <tr>
-                      <td
-                        colSpan="5"
-                        className="text-center text-gray-500 border border-gray-300 px-4 py-2"
-                      >
-                        No history available.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
+                            <td className="border border-gray-300 px-4 py-2">{box.totalParts}</td>
+                            {boxIndex === 0 && (
+                              <td
+                                rowSpan={item.boxes.length}
+                                className="border border-gray-300 px-4 py-2 align-top"
+                              >
+                                {item.createdAt}
+                              </td>
+                            )}
+                          </tr>
+                        ))
+                      )
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="5"
+                          className="text-center text-gray-500 border border-gray-300 px-4 py-2"
+                        >
+                          No history available.
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
               </table>
             </div>
           </div>
+
+          {totalPages > 1 && (
+  <div className="flex justify-between items-center mt-4">
+    <button
+      onClick={() => handlePageChange(currentPage - 1)}
+      disabled={currentPage === 1}
+      className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+    >
+      Previous
+    </button>
+    <span>
+      Page {currentPage} of {totalPages}
+    </span>
+    <button
+      onClick={() => handlePageChange(currentPage + 1)}
+      disabled={currentPage === totalPages}
+      className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+    >
+      Next
+    </button>
+  </div>
+)}
 
 
         {/* Modal */}
