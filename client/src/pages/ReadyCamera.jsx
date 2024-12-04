@@ -20,7 +20,8 @@ const ReadyCamera = () => {
   const [filters, setFilters] = useState({
     date: "",
     category: "",
-  });
+    uid: "", // Add UID search filter
+  });  
   const ITEMS_PER_PAGE = 5; // Number of items per page
   const [currentPage, setCurrentPage] = useState(1); // Track the current page
 
@@ -79,9 +80,16 @@ const ReadyCamera = () => {
         const matchesDate = !filters.date || item.createdAt === formattedDate;
         const matchesCategory = !filters.category || item.categoryName === filters.category;
   
-        return matchesDate && matchesCategory;
+        const matchesUID = !filters.uid || item.boxes.some((box) =>
+          box.partUIDs.some((uid) =>
+            uid.toLowerCase().includes(filters.uid.toLowerCase())
+          )
+        );
+  
+        return matchesDate && matchesCategory && matchesUID;
       });
   };
+  
   
   const filteredHistory = applyFilters();
 
@@ -236,40 +244,58 @@ const ReadyCamera = () => {
           </button>
         </div>
 
-        {/* Filters */}
-        <div className="bg-gray-100 p-4 rounded mb-4">
-          <h3 className="font-semibold text-md mb-4">Filters</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="font-medium block mb-1">Date</label>
-              <input
-                type="date"
-                className="w-full p-2 border rounded"
-                value={filters.date}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, date: e.target.value }))
-                }
-              />
+            {/* Filters */}
+            <div className="bg-gray-100 p-4 rounded mb-4">
+              <h3 className="font-semibold text-md mb-4">Filters</h3>
+              <div className="flex flex-wrap gap-4">
+                {/* Date Filter */}
+                <div className="flex-1 min-w-[150px]">
+                  <label className="font-medium block mb-1">Date</label>
+                  <input
+                    type="date"
+                    className="w-full p-2 border rounded"
+                    value={filters.date}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, date: e.target.value }))
+                    }
+                  />
+                </div>
+
+                {/* Category Filter */}
+                <div className="flex-1 min-w-[150px]">
+                  <label className="font-medium block mb-1">Category</label>
+                  <select
+                    className="w-full p-2 border rounded"
+                    value={filters.category}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, category: e.target.value }))
+                    }
+                  >
+                    <option value="">All Categories</option>
+                    {allCategory.map((cat) => (
+                      <option key={cat._id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* UID Search Filter */}
+                <div className="flex-1 min-w-[150px]">
+                  <label className="font-medium block mb-1">Search UID</label>
+                  <input
+                    type="text"
+                    className="w-full p-2 border rounded"
+                    placeholder="Enter UID"
+                    value={filters.uid}
+                    onChange={(e) =>
+                      setFilters((prev) => ({ ...prev, uid: e.target.value }))
+                    }
+                  />
+                </div>
+              </div>
             </div>
-            <div>
-              <label className="font-medium block mb-1">Category</label>
-              <select
-                className="w-full p-2 border rounded"
-                value={filters.category}
-                onChange={(e) =>
-                  setFilters((prev) => ({ ...prev, category: e.target.value }))
-                }
-              >
-                <option value="">All Categories</option>
-                {allCategory.map((cat) => (
-                  <option key={cat._id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
+
 
           {/* History Table */}
           <div className="mt-6">
@@ -308,8 +334,21 @@ const ReadyCamera = () => {
                             )}
                             <td className="border border-gray-300 px-4 py-2">{box.boxNo}</td>
                             <td className="border border-gray-300 px-4 py-2 whitespace-pre-wrap">
-                              {box.partUIDs.join("\n")}
-                            </td>
+                                <ul className="space-y-1">
+                                  {box.partUIDs.map((uid, idx) => (
+                                    <li
+                                      key={idx}
+                                      className={`${
+                                        filters.uid && uid.toLowerCase().includes(filters.uid.toLowerCase())
+                                          ? "bg-yellow-200 font-bold" // Highlight matching UIDs
+                                          : ""
+                                      }`}
+                                    >
+                                      {uid}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </td>
                             <td className="border border-gray-300 px-4 py-2">{box.totalParts}</td>
                             {boxIndex === 0 && (
                               <td
