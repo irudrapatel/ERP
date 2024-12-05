@@ -64,6 +64,8 @@ const SummaryApi = {
       },
 
     deliverCamera: { url: "/api/delivery/deliver", method: "post" },
+    getDeliveryHistory: { url: "/api/delivery/history", method: "get" },
+
       
 
 };
