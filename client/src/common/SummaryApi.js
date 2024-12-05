@@ -62,6 +62,8 @@ const SummaryApi = {
         url: '/api/adminpanel/parts-summary',
         method: 'get',
       },
+
+    deliverCamera: { url: "/api/delivery/deliver", method: "post" },
       
 
 };
