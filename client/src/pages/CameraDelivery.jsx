@@ -356,122 +356,152 @@ const [filters, setFilters] = useState({
         </div>
 
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
-            <div className="bg-white p-6 rounded shadow-lg w-full max-w-4xl relative">
-              <button
-                className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold"
-                onClick={closeModal}
-              >
-                ×
-              </button>
-              <h2 className="font-semibold text-lg mb-4">Deliver Camera</h2>
-              <form className="grid gap-4">
-                <div>
-                  <label className="font-medium">IWON Name</label>
-                  <input
-                    type="text"
-                    className="w-full p-2 border rounded"
-                    value={data.iwonName}
-                    onChange={(e) =>
-                      setData((prev) => ({ ...prev, iwonName: e.target.value }))
-                    }
-                  />
-                </div>
-                <div>
-                  <label className="font-medium">Select Category</label>
-                  <select
-                    className="w-full p-2 border rounded"
-                    value={selectCategory}
-                    onChange={(e) => handleCategoryChange(e.target.value)}
-                  >
-                    <option value="">Select Category</option>
-                    {allCategory.map((cat) => (
-                      <option key={cat._id} value={cat._id}>
-                        {cat.name}
-                      </option>
-                    ))}
-                  </select>
-                  <div>
-  {/* Available Boxes Section */}
-  <div>
-    <label className="font-medium">Available Boxes</label>
-    <div
-      className="max-h-40 overflow-y-auto border border-gray-300 rounded p-2"
-      style={{ maxHeight: "150px" }} // Scrollable panel for available boxes
-    >
-      <ul className="grid grid-cols-3 gap-2">
-        {availableBoxes.map((box) => (
-          <li
-            key={box.boxNo}
-            className="bg-blue-50 text-center border rounded p-2 hover:bg-blue-100"
-          >
-            <button
-              type="button"
-              onClick={() => handleBoxSelection(box)}
-              className="text-blue-500 hover:underline"
-            >
-              {box.boxNo}
-            </button>
-          </li>
-        ))}
-      </ul>
-    </div>
-  </div>
-
-                {/* Selected Boxes Section */}
-                <div className="mt-4">
-                    <h3 className="font-semibold">Selected Boxes</h3>
-                    <div
-                    className="max-h-60 overflow-y-auto border border-gray-300 rounded p-2"
-                    style={{ maxHeight: "200px" }} // Scrollable panel for selected boxes
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4">
+                <div className="bg-white p-6 rounded shadow-lg w-full max-w-4xl relative">
+                <button
+                    className="absolute top-2 right-2 text-gray-600 hover:text-gray-800 text-2xl font-bold"
+                    onClick={closeModal}
+                >
+                    ×
+                </button>
+                <h2 className="font-semibold text-lg mb-4">Deliver Camera</h2>
+                <form className="grid gap-4">
+                    <div>
+                    <label className="font-medium">IWON Name</label>
+                    <input
+                        type="text"
+                        className="w-full p-2 border rounded"
+                        value={data.iwonName}
+                        onChange={(e) =>
+                        setData((prev) => ({ ...prev, iwonName: e.target.value }))
+                        }
+                    />
+                    </div>
+                    <div>
+                    <label className="font-medium">Select Category</label>
+                    <select
+                        className="w-full p-2 border rounded"
+                        value={selectCategory}
+                        onChange={(e) => handleCategoryChange(e.target.value)}
                     >
-                    {selectedBoxes.length === 0 ? (
-                        <p className="text-gray-500 text-sm">No boxes selected yet.</p>
-                    ) : (
-                        selectedBoxes.map((box, index) => (
-                        <div key={box.boxNo} className="mb-4">
-                            <h4 className="text-blue-600 font-medium">{box.boxNo}</h4>
+                        <option value="">Select Category</option>
+                        {allCategory.map((cat) => (
+                        <option key={cat._id} value={cat._id}>
+                            {cat.name}
+                        </option>
+                        ))}
+                    </select>
+                    <div>
+                        {/* Available Boxes Section */}
+                        <div>
+                        <label className="font-medium">Available Boxes</label>
+                        <div
+                            className="max-h-40 overflow-y-auto border border-gray-300 rounded p-2"
+                            style={{ maxHeight: "150px" }}
+                        >
                             <ul className="grid grid-cols-3 gap-2">
-                            {box.partUIDs.slice(0, 9).map((uid) => ( // Limit to 9 UIDs per box
+                            {availableBoxes.map((box) => (
                                 <li
-                                key={uid}
-                                className="bg-gray-50 border rounded p-1 text-sm text-center"
+                                key={box.boxNo}
+                                className="bg-blue-50 text-center border rounded p-2 hover:bg-blue-100 cursor-pointer"
+                                onClick={() => handleBoxSelection(box)} // Add click handler to the entire <li>
                                 >
-                                <label>
-                                    <input
-                                    type="checkbox"
-                                    className="mr-1"
-                                    checked={box.selectedUIDs?.includes(uid) || false}
-                                    onChange={() => handleUIDSelection(index, uid)}
-                                    />
-                                    {uid}
-                                </label>
+                                {box.boxNo} {/* No need for a separate <button> now */}
                                 </li>
                             ))}
                             </ul>
-                            {box.partUIDs.length > 9 && (
-                            <p className="text-gray-500 text-xs mt-1">
-                                Scroll to see more UIDs
-                            </p>
+                        </div>
+                        </div>
+
+
+                        {/* Selected Boxes Section */}
+                        <div className="mt-4">
+                        <h3 className="font-semibold">Selected Boxes</h3>
+                        <div
+                            className="max-h-60 overflow-y-auto border border-gray-300 rounded p-2"
+                            style={{ maxHeight: "200px" }}
+                        >
+                            {selectedBoxes.length === 0 ? (
+                            <p className="text-gray-500 text-sm">No boxes selected yet.</p>
+                            ) : (
+                            selectedBoxes.map((box, index) => (
+                                <div key={box.boxNo} className="mb-4">
+                                <div className="flex justify-between items-center">
+                                    <h4 className="text-blue-600 font-medium">{box.boxNo}</h4>
+                                    <button
+                                    className="text-red-500 font-bold"
+                                    onClick={() => {
+                                        setAvailableBoxes((prev) => [...prev, box]);
+                                        setSelectedBoxes((prev) =>
+                                        prev.filter((b) => b.boxNo !== box.boxNo)
+                                        );
+                                    }}
+                                    >
+                                    -
+                                    </button>
+                                </div>
+                                <label className="block">
+                                    <input
+                                    type="checkbox"
+                                    className="mr-2"
+                                    onChange={(e) => {
+                                        const checked = e.target.checked;
+                                        setSelectedBoxes((prev) => {
+                                        const updated = [...prev];
+                                        updated[index].selectedUIDs = checked
+                                            ? [...box.partUIDs]
+                                            : [];
+                                        return updated;
+                                        });
+                                    }}
+                                    checked={
+                                        box.selectedUIDs?.length === box.partUIDs.length
+                                    }
+                                    />
+                                    Select All UID
+                                </label>
+                                <ul className="grid grid-cols-3 gap-2">
+                                    {box.partUIDs.slice(0, 9).map((uid) => (
+                                    <li
+                                        key={uid}
+                                        className="bg-gray-50 border rounded p-1 text-sm text-center"
+                                    >
+                                        <label>
+                                        <input
+                                            type="checkbox"
+                                            className="mr-1"
+                                            checked={box.selectedUIDs?.includes(uid) || false}
+                                            onChange={() => handleUIDSelection(index, uid)}
+                                        />
+                                        {uid}
+                                        </label>
+                                    </li>
+                                    ))}
+                                </ul>
+                                {box.partUIDs.length > 9 && (
+                                    <p className="text-gray-500 text-xs mt-1">
+                                    Scroll to see more UIDs
+                                    </p>
+                                )}
+                                </div>
+                            ))
                             )}
                         </div>
-                        ))
-                    )}
+                        </div>
                     </div>
+                    </div>
+                    <button
+                    type="button"
+                    className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
+                    onClick={handleSubmit}
+                    >
+                    Submit Delivery
+                    </button>
+                </form>
                 </div>
-                </div>
-                </div>
-                <button
-                  type="button"
-                  className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600"
-                  onClick={handleSubmit}
-                >
-                  Submit Delivery
-                </button>
-              </form>
             </div>
-          </div>
-        )}
+            )}
+
 
             {totalPages > 1 && (
           <div className="flex justify-between items-center mt-4">
