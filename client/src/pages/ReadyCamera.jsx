@@ -300,7 +300,7 @@ const ReadyCamera = () => {
           {/* History Table */}
           <div className="mt-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-semibold text-md">Ready Camera History</h3>
+              <h3 className="font-semibold text-md">Available Ready Camera</h3>
               <button
                 className="bg-blue-500 text-white py-1 px-4 rounded hover:bg-blue-600"
                 onClick={downloadReadyCameraHistory}
