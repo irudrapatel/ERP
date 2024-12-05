@@ -22,6 +22,36 @@ const Dashboard = () => {
   const [startDate, setStartDate] = useState(""); // Start date for filtering
   const [endDate, setEndDate] = useState(""); // End date for filtering
   const [filteredModalData, setFilteredModalData] = useState([]);
+  const [totalDeliveredByCategory, setTotalDeliveredByCategory] = useState({});
+
+
+
+  const fetchTotalDeliveredByCategory = async () => {
+    try {
+      const response = await Axios.get("http://localhost:8080/api/delivery/history");
+      if (response.data.success) {
+        const deliveredCount = {};
+  
+        response.data.data.forEach((record) => {
+          const category = record.category;
+          if (!deliveredCount[category]) {
+            deliveredCount[category] = 0;
+          }
+          record.boxes.forEach((box) => {
+            deliveredCount[category] += box.deliveredUIDs.length;
+          });
+        });
+  
+        setTotalDeliveredByCategory(deliveredCount);
+      }
+    } catch (error) {
+      console.error("Error fetching total delivered cameras:", error);
+    }
+  };
+  
+  useEffect(() => {
+    fetchTotalDeliveredByCategory();
+  }, []);
 
 
   // Fetch data from APIs
@@ -72,9 +102,15 @@ const Dashboard = () => {
       console.error("Error fetching total parts by category:", error);
     }
   };
+  
 
   useEffect(() => {
     fetchTotalPartsByCategory();
+  }, []);
+
+  
+  useEffect(() => {
+    fetchTotalDeliveredByCategory();
   }, []);
 
   // Memoized calculations
@@ -309,6 +345,12 @@ const Dashboard = () => {
                 <h3 className="text-gray-600 text-center font-semibold text-lg mb-2">
                   {category.name}
                 </h3>
+                <p className="text-center text-sm text-gray-500">
+                  Delivered Camera:{" "}
+                  <span className="text-green-500 font-bold text-xl">
+                    {totalDeliveredByCategory[category.name] || 0}
+                  </span>
+                </p>
                 <p className="text-center text-sm text-gray-500">
                   Ready to delivery Camera:{" "}
                   <span className="text-purple-500 font-bold text-xl">{totalParts}</span>
