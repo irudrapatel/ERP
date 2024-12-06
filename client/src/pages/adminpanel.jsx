@@ -367,7 +367,7 @@ const Dashboard = () => {
         {/* Modal for Table */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-4xl w-full h-[80vh] overflow-hidden flex flex-col">
+            <div className="bg-white rounded-lg p-6 max-w-5xl w-full h-[80vh] overflow-hidden flex flex-col">
               <h2 className="text-lg font-bold mb-4">Parts Summary</h2>
 
               {/* Date Filter */}
@@ -416,7 +416,7 @@ const Dashboard = () => {
                         <td className="border border-gray-300 px-4 py-2">{data.partsCode}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.partsName}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.inwardQty}</td>
-                        <td className="border border-gray-300 px-4 py-2">{data.outwardQty - data.damageQty}</td>
+                        <td className="border border-gray-300 px-4 py-2">{data.outwardQty}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.damageQty}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.lastUpdated}</td>
                       </tr>
