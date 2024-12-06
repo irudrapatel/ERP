@@ -22,7 +22,7 @@ const ReadyCamera = () => {
     category: "",
     uid: "", // Add UID search filter
   });  
-  const ITEMS_PER_PAGE = 5; // Number of items per page
+  const ITEMS_PER_PAGE = 10; // Number of items per page
   const [currentPage, setCurrentPage] = useState(1); // Track the current page
 
   const openModal = () => setIsModalOpen(true);
@@ -377,26 +377,26 @@ const ReadyCamera = () => {
           </div>
 
           {totalPages > 1 && (
-  <div className="flex justify-between items-center mt-4">
-    <button
-      onClick={() => handlePageChange(currentPage - 1)}
-      disabled={currentPage === 1}
-      className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-    >
-      Previous
-    </button>
-    <span>
-      Page {currentPage} of {totalPages}
-    </span>
-    <button
-      onClick={() => handlePageChange(currentPage + 1)}
-      disabled={currentPage === totalPages}
-      className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
-    >
-      Next
-    </button>
-  </div>
-)}
+          <div className="flex justify-between items-center mt-4">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Previous
+            </button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="px-4 py-2 bg-gray-300 rounded disabled:opacity-50"
+            >
+              Next
+            </button>
+          </div>
+        )}
 
 
         {/* Modal */}
