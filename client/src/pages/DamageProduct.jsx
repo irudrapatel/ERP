@@ -382,11 +382,12 @@ const handlePageChange = (newPage) => {
                     <option value="">Select Part</option>
                     {filteredSubCategories.map((sub) => (
                       <option key={sub._id} value={sub._id}>
-                        {sub.name}
+                        {`${sub.code} - ${sub.name}`}
                       </option>
                     ))}
                   </select>
                 </div>
+
 
                 {/* Add Box */}
                 <div>
