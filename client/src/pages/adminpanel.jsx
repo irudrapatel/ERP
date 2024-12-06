@@ -416,7 +416,7 @@ const Dashboard = () => {
                         <td className="border border-gray-300 px-4 py-2">{data.partsCode}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.partsName}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.inwardQty}</td>
-                        <td className="border border-gray-300 px-4 py-2">{data.outwardQty}</td>
+                        <td className="border border-gray-300 px-4 py-2">{data.outwardQty - data.damageQty}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.damageQty}</td>
                         <td className="border border-gray-300 px-4 py-2">{data.lastUpdated}</td>
                       </tr>
