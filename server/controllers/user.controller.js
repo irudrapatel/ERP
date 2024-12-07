@@ -47,7 +47,7 @@ export async function registerUserController(request,response){
 
         const verifyEmail = await sendEmail({
             sendTo : email,
-            subject : "Verify email from ERP",
+            subject : "Verify email from E-commerce",
             html : verifyEmailTemplate({
                 name,
                 url : VerifyEmailUrl
@@ -303,7 +303,7 @@ export async function forgotPasswordController(request,response) {
 
         await sendEmail({
             sendTo : email,
-            subject : "Forgot password from ERP",
+            subject : "Forgot password from E-commerce",
             html : forgotPasswordTemplate({
                 name : user.name,
                 otp : otp
