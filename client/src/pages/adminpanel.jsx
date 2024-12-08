@@ -218,6 +218,7 @@ const Dashboard = () => {
               outwardQty: 0,
               damageQty: 0,
               lastUpdated: null,
+              lastEditedUser: "Unknown",
             };
           }
   
@@ -234,6 +235,7 @@ const Dashboard = () => {
               partsMap[subCategoryId].lastUpdated < productLastUpdated
             ) {
               partsMap[subCategoryId].lastUpdated = productLastUpdated;
+              partsMap[subCategoryId].lastEditedUser = product.user?.name || "Unknown";
             }
           }
         });
@@ -251,6 +253,14 @@ const Dashboard = () => {
           (!endDateFilter || outDate <= endDateFilter)
         ) {
           partsMap[subCategoryId].outwardQty += out.quantity;
+  
+          if (
+            !partsMap[subCategoryId].lastUpdated ||
+            partsMap[subCategoryId].lastUpdated < outDate
+          ) {
+            partsMap[subCategoryId].lastUpdated = outDate;
+            partsMap[subCategoryId].lastEditedUser = out.user?.name || "Unknown";
+          }
         }
       });
   
@@ -265,8 +275,15 @@ const Dashboard = () => {
           (!startDateFilter || damageDate >= startDateFilter) &&
           (!endDateFilter || damageDate <= endDateFilter)
         ) {
-          partsMap[subCategoryId].damageQty +=
-            damage.action === "Add" ? damage.quantity : -damage.quantity;
+          partsMap[subCategoryId].damageQty += damage.action === "Add" ? damage.quantity : -damage.quantity;
+  
+          if (
+            !partsMap[subCategoryId].lastUpdated ||
+            partsMap[subCategoryId].lastUpdated < damageDate
+          ) {
+            partsMap[subCategoryId].lastUpdated = damageDate;
+            partsMap[subCategoryId].lastEditedUser = damage.updatedBy?.name || damage.createdBy?.name || "Unknown";
+          }
         }
       });
   
@@ -283,7 +300,7 @@ const Dashboard = () => {
       }));
   
       setModalData(tableData);
-      setFilteredModalData(tableData); // Initialize filtered data
+      setFilteredModalData(tableData);
       setShowModal(true);
     } catch (error) {
       console.error("Error fetching modal data:", error);
@@ -409,20 +426,23 @@ const Dashboard = () => {
                       <th className="border border-gray-300 px-4 py-2">Outward Qty</th>
                       <th className="border border-gray-300 px-4 py-2">Damage Qty</th>
                       <th className="border border-gray-300 px-4 py-2">Last Updated</th>
+                      <th className="border border-gray-300 px-4 py-2">Last Edited User</th> {/* New Column */}
                     </tr>
                   </thead>
-                  <tbody>
-                    {filteredModalData.map((data, index) => (
-                      <tr key={index}>
-                        <td className="border border-gray-300 px-4 py-2">{data.partsCode}</td>
-                        <td className="border border-gray-300 px-4 py-2">{data.partsName}</td>
-                        <td className="border border-gray-300 px-4 py-2">{data.inwardQty}</td>
-                        <td className="border border-gray-300 px-4 py-2">{data.outwardQty}</td>
-                        <td className="border border-gray-300 px-4 py-2">{data.damageQty}</td>
-                        <td className="border border-gray-300 px-4 py-2">{data.lastUpdated}</td>
-                      </tr>
-                    ))}
-                  </tbody>
+                    <tbody>
+                      {filteredModalData.map((data, index) => (
+                        <tr key={index}>
+                          <td className="border border-gray-300 px-4 py-2">{data.partsCode}</td>
+                          <td className="border border-gray-300 px-4 py-2">{data.partsName}</td>
+                          <td className="border border-gray-300 px-4 py-2">{data.inwardQty}</td>
+                          <td className="border border-gray-300 px-4 py-2">{data.outwardQty}</td>
+                          <td className="border border-gray-300 px-4 py-2">{data.damageQty}</td>
+                          <td className="border border-gray-300 px-4 py-2">{data.lastUpdated}</td>
+                          <td className="border border-gray-300 px-4 py-2">{data.lastEditedUser}</td> {/* New Data */}
+                        </tr>
+                      ))}
+                    </tbody>
+
                 </table>
               </div>
 
