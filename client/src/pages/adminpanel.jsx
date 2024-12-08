@@ -26,12 +26,13 @@ const Dashboard = () => {
 
 
 
+  const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080";
+
   const fetchTotalDeliveredByCategory = async () => {
     try {
-      const response = await Axios.get("http://localhost:8080/api/delivery/history");
+      const response = await Axios.get(`${API_BASE_URL}/api/delivery/history`);
       if (response.data.success) {
         const deliveredCount = {};
-  
         response.data.data.forEach((record) => {
           const category = record.category;
           if (!deliveredCount[category]) {
@@ -41,13 +42,13 @@ const Dashboard = () => {
             deliveredCount[category] += box.deliveredUIDs.length;
           });
         });
-  
         setTotalDeliveredByCategory(deliveredCount);
       }
     } catch (error) {
       console.error("Error fetching total delivered cameras:", error);
     }
   };
+  
   
   useEffect(() => {
     fetchTotalDeliveredByCategory();
