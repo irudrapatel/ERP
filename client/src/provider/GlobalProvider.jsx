@@ -131,12 +131,17 @@ const GlobalProvider = ({children}) => {
       }
     }
 
-    useEffect(()=>{
-      fetchCartItem()
-      handleLogoutOut()
-      fetchAddress()
-      fetchOrder()
-    },[user])
+    useEffect(() => {
+      fetchCartItem();
+      fetchAddress();
+      fetchOrder();
+    
+      // Log out if the user state is null or undefined
+      if (!user || Object.keys(user).length === 0) {
+        handleLogoutOut();
+      }
+    }, [user]);
+    
     
     return(
         <GlobalContext.Provider value={{
