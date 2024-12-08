@@ -17,8 +17,6 @@ export const handleDamagesProduct = async (req, res) => {
       return res.status(400).json({ success: false, message: "No valid boxes provided." });
     }
 
-    const damageProductsToSave = []; // To collect damaged product records for batch save
-
     for (const box of boxes) {
       const { boxNo, partsQty } = box;
 
@@ -62,21 +60,27 @@ export const handleDamagesProduct = async (req, res) => {
         await selectedProduct.save(); // Save updates to ProductModel
       }
 
-      // Always log damage products
-      damageProductsToSave.push({ 
-        category, 
-        subCategory, 
-        boxNo, 
-        quantity: partsQty, 
-        action,
-        createdBy: userId, // Add createdBy field
-        updatedBy: userId, // Add updatedBy field
-      });
-    }
+      // Check if a damage product with the same category, subCategory, and boxNo exists
+      const existingDamageProduct = await DamageProduct.findOne({ category, subCategory, boxNo, action });
 
-    // Batch save damage products
-    if (damageProductsToSave.length > 0) {
-      await DamageProduct.insertMany(damageProductsToSave);
+      if (existingDamageProduct) {
+        // Update the existing damage product quantity (ensure it's treated as a number)
+        existingDamageProduct.quantity = Number(existingDamageProduct.quantity) + Number(partsQty);
+        existingDamageProduct.updatedBy = userId;
+        await existingDamageProduct.save();
+      } else {
+        // Create a new damage product entry
+        const newDamageProduct = new DamageProduct({
+          category,
+          subCategory,
+          boxNo,
+          quantity: partsQty,
+          action,
+          createdBy: userId,
+          updatedBy: userId,
+        });
+        await newDamageProduct.save();
+      }
     }
 
     res.status(200).json({ success: true, message: "Operation completed successfully." });
