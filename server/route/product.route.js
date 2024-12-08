@@ -34,7 +34,7 @@ productRouter.post(
   uploadExcel // Controller function
 );
 
-productRouter.post('/create', createProductController);
+productRouter.post('/create', auth , createProductController);
 productRouter.post('/get', getProductController);
 productRouter.post('/get-product-by-category', getProductByCategory);
 productRouter.post(

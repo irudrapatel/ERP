@@ -5,6 +5,7 @@ import ProductModel from "../models/product.model.js";
 export const handleDamagesProduct = async (req, res) => {
   try {
     const { category, subCategory, boxes, action } = req.body;
+    const userId = req.userId; // Extract user ID from the authenticated request
 
     console.log("Received request body:", req.body);
 
@@ -62,7 +63,15 @@ export const handleDamagesProduct = async (req, res) => {
       }
 
       // Always log damage products
-      damageProductsToSave.push({ category, subCategory, boxNo, quantity: partsQty, action });
+      damageProductsToSave.push({ 
+        category, 
+        subCategory, 
+        boxNo, 
+        quantity: partsQty, 
+        action,
+        createdBy: userId, // Add createdBy field
+        updatedBy: userId, // Add updatedBy field
+      });
     }
 
     // Batch save damage products
@@ -92,10 +101,12 @@ export const getDamageProducts = async (req, res) => {
       };
     }
 
-    // Fetch damage products with pagination
+    // Fetch damage products with pagination and populate category, subCategory, and user details
     const damageProducts = await DamageProduct.find(query)
       .populate("category", "name")
       .populate("subCategory", "name")
+      .populate("createdBy", "name email") // Populate createdBy user details
+      .populate("updatedBy", "name email") // Populate updatedBy user details
       .sort({ createdAt: -1 }) // Sort by latest first
       .skip((page - 1) * limit)
       .limit(Number(limit));

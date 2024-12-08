@@ -4,6 +4,7 @@ import DeliveryHistoryModel from "../models/deliveryhistory.model.js";
 export const deliverCamera = async (req, res) => {
     try {
       const { iwonName, category, boxes } = req.body;
+      const userId = req.userId; // Extract user ID from authenticated request
   
       if (!iwonName || !category || !Array.isArray(boxes) || boxes.length === 0) {
         return res.status(400).json({
@@ -20,6 +21,7 @@ export const deliverCamera = async (req, res) => {
           boxNo: box.boxNo,
           deliveredUIDs: box.selectedUIDs,
         })),
+        user: userId, // Associate the user with the delivery
       };
   
       // Remove UIDs from the readyCamera collection
@@ -83,7 +85,7 @@ export const deliverCamera = async (req, res) => {
   };
   
 
-export const getDeliveryHistory = async (req, res) => {
+  export const getDeliveryHistory = async (req, res) => {
     try {
       const { category, date } = req.query;
   
@@ -91,7 +93,9 @@ export const getDeliveryHistory = async (req, res) => {
       if (category) filters.category = category;
       if (date) filters.createdAt = { $gte: new Date(date) };
   
-      const history = await DeliveryHistoryModel.find(filters).sort({ createdAt: -1 });
+      const history = await DeliveryHistoryModel.find(filters)
+        .sort({ createdAt: -1 })
+        .populate("user", "name email"); // Populate user details
   
       res.status(200).json({
         message: "Delivery history fetched successfully.",

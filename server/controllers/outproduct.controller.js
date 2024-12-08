@@ -8,6 +8,7 @@ import SubCategoryModel from "../models/subCategory.model.js";
 export const addOutProduct = async (req, res) => {
   try {
     const { category, subCategory, box, quantity } = req.body;
+    const userId = req.userId; // Extract user ID from the authenticated request
 
     console.log("Request Body:", req.body);
 
@@ -63,6 +64,7 @@ export const addOutProduct = async (req, res) => {
       subCategory,
       box,
       quantity,
+      user: userId, // Associate the user with the out product
     });
 
     await outProduct.save();
@@ -86,10 +88,11 @@ export const getOutProducts = async (req, res) => {
       mongoose.model("SubCategory", SubCategoryModel.schema);
     }
 
-    // Fetch all out products and populate category and subCategory
+    // Fetch all out products and populate category, subCategory, and user
     const outProducts = await OutProduct.find()
       .populate({ path: "category", model: "Category", select: "name" })
-      .populate({ path: "subCategory", model: "SubCategory", select: "name code" });
+      .populate({ path: "subCategory", model: "SubCategory", select: "name code" })
+      .populate({ path: "user", select: "name email" }); // Corrected line
 
     // Fetch box details from ProductModel
     const populatedProducts = await Promise.all(
@@ -101,7 +104,7 @@ export const getOutProducts = async (req, res) => {
 
         // Attach box details if found
         if (product && product.boxes.length > 0) {
-          const box = product.boxes[0]; // Since we fetched a single box
+          const box = product.boxes[0];
           return {
             ...outProduct.toObject(),
             box: {

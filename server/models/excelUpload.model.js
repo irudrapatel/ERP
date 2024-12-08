@@ -10,6 +10,7 @@ const excelUploadSchema = new mongoose.Schema(
         subCategory: { type: mongoose.Schema.Types.ObjectId, ref: "subCategory", required: true },
         status: { type: String, enum: ["Pending", "Approved", "Rejected"], default: "Pending" },
         remark: { type: String, default: "" },
+        user: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Added user reference
     },
     { timestamps: true }
 );

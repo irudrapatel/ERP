@@ -14,6 +14,8 @@ const readyCameraSchema = new mongoose.Schema(
   {
     category: { type: mongoose.Schema.Types.ObjectId, ref: "category", required: true },
     boxes: [boxSchema], // Each entry contains boxNo and partsUid
+    description: { type: String, default: "" }, // Optional description field
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // Add user reference
   },
   { timestamps: true }
 );

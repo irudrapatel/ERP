@@ -6,6 +6,7 @@ const outProductSchema = new mongoose.Schema(
     subCategory: { type: mongoose.Schema.Types.ObjectId, ref: 'SubCategory', required: true },
     box: { type: mongoose.Schema.Types.ObjectId, required: true }, // Reference to a box ID in ProductModel
     quantity: { type: Number, required: true },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }, // Add user reference
   },
   { timestamps: true }
 );

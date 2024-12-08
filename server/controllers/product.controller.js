@@ -16,6 +16,8 @@ export const uploadExcel = async (req, res) => {
             return res.status(400).json({ success: false, message: "No file uploaded" });
         }
 
+        const userId = req.userId; // Extract user ID from authenticated request
+
         // Fetch subcategories from external API
         const subCategoryResponse = await axios.post(`${SummaryApi.baseURL}${SummaryApi.getSubCategory.url}`);
         if (!subCategoryResponse.data.success) {
@@ -61,6 +63,7 @@ export const uploadExcel = async (req, res) => {
                 subCategory: new mongoose.Types.ObjectId(matchedSubCategory._id),
                 status: "Pending",
                 remark: "",
+                user: userId, // Add user reference
             });
         });
 
@@ -165,6 +168,8 @@ export const createProductController = async (request, response) => {
             more_details,
         } = request.body;
 
+        const userId = request.userId; // Extract user ID from the authenticated request
+
         // Validate required fields
         if (!category || !subCategory || !boxes || !Array.isArray(boxes) || boxes.length === 0) {
             return response.status(400).json({
@@ -191,6 +196,7 @@ export const createProductController = async (request, response) => {
             boxes, // Save boxes as an array
             description,
             more_details,
+            user: userId, // Add user reference
         });
 
         const saveProduct = await product.save();
@@ -335,8 +341,11 @@ export const getProductController = async (request, response) => {
 
         // Fetch all records without limit or skip
         const data = await ProductModel.find(query)
-            .sort({ createdAt: -1 }) // Sort by creation date (latest first)
-            .populate("category subCategory"); // Populate related fields
+        .sort({ createdAt: -1 }) // Sort by creation date (latest first)
+        .populate("category", "name") // Populate category name
+        .populate("subCategory", "name code") // Populate subCategory name
+        .populate("user", "name email"); // Populate user name and email
+            
 
         return response.json({
             message: "Product data",

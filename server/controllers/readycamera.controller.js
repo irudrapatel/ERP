@@ -3,6 +3,7 @@ import ReadyCameraModel from "../models/readycamera.model.js";
 export const createReadyCamera = async (req, res) => {
   try {
     const { category, boxes, description } = req.body;
+    const userId = req.userId; // Extract user ID from authenticated request
 
     if (!category || !Array.isArray(boxes) || boxes.length === 0) {
       return res.status(400).json({
@@ -21,11 +22,12 @@ export const createReadyCamera = async (req, res) => {
       }
     }
 
-    // Save the ready camera details
+    // Save the ready camera details with user ID
     const readyCamera = new ReadyCameraModel({
       category,
       boxes,
       description,
+      user: userId, // Associate the user with the ready camera
     });
     await readyCamera.save();
 
@@ -44,6 +46,7 @@ export const createReadyCamera = async (req, res) => {
 };
 
 
+
 export const getReadyCameraHistory = async (req, res) => {
   try {
     // Fetch ready camera data
@@ -57,6 +60,15 @@ export const getReadyCameraHistory = async (req, res) => {
         },
       },
       { $unwind: "$categoryDetails" },
+      {
+        $lookup: {
+          from: "users",
+          localField: "user",
+          foreignField: "_id",
+          as: "userDetails",
+        },
+      },
+      { $unwind: "$userDetails" }, // Unwind user details to get the first matched user
       {
         $addFields: {
           totalParts: {
@@ -77,6 +89,11 @@ export const getReadyCameraHistory = async (req, res) => {
           category: "$categoryDetails.name",
           boxes: 1,
           totalParts: 1, // Include total parts for each record
+          user: {
+            _id: "$userDetails._id",
+            name: "$userDetails.name",
+            email: "$userDetails.email",
+          }, // Include user details as an object with _id, name, and email
         },
       },
     ]);

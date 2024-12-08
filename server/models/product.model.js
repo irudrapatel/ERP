@@ -1,55 +1,66 @@
 import mongoose from "mongoose";
 
-const productSchema = new mongoose.Schema({
-    category: [
+const productSchema = new mongoose.Schema(
+    {
+      category: [
         {
-            type: mongoose.Schema.ObjectId,
-            ref: 'category',
+          type: mongoose.Schema.ObjectId,
+          ref: "category",
+          required: true,
+        },
+      ],
+      subCategory: [
+        {
+          type: mongoose.Schema.ObjectId,
+          ref: "subCategory",
+          required: true,
+        },
+      ],
+      boxes: [
+        {
+          boxNo: {
+            type: String,
             required: true,
-        }
-    ],
-    subCategory: [
-        {
-            type: mongoose.Schema.ObjectId,
-            ref: 'subCategory',
+          },
+          partsQty: {
+            type: Number,
             required: true,
-        }
-    ],
-    boxes: [
-        {
-            boxNo: {
-                type: String,
-                required: true,
-            },
-            partsQty: {
-                type: Number,
-                required: true,
-            },
-        }
-    ],
-    description: {
+          },
+        },
+      ],
+      description: {
         type: String,
         default: "",
-    },
-    more_details: {
+      },
+      more_details: {
         type: Object,
         default: {},
-    },
-    publish: {
+      },
+      publish: {
         type: Boolean,
         default: true,
+      },
+      user: {
+        type: mongoose.Schema.ObjectId,
+        ref: "User", // Add reference to the User model
+        required: true,
+      },
+    },
+    {
+      timestamps: true,
     }
-}, {
-    timestamps: true,
-});
-
-productSchema.index({
-    description: 'text',
-}, {
-    weights: {
+  );
+  
+  productSchema.index(
+    {
+      description: "text",
+    },
+    {
+      weights: {
         description: 10,
+      },
     }
-});
+  );
 
 const ProductModel = mongoose.model('product', productSchema);
 
@@ -59,13 +70,13 @@ const excelUploadSchema = new mongoose.Schema({
     boxNo: { type: String, required: true },
     qty: { type: Number, required: true },
     category: { type: mongoose.Schema.Types.ObjectId, ref: "category", required: true },
-    subCategory: { type: mongoose.Schema.Types.ObjectId, ref: "subCategory", required: true }, // Ensure this exists
+    subCategory: { type: mongoose.Schema.Types.ObjectId, ref: "subCategory", required: true },
     status: { type: String, default: "Pending" },
     remark: { type: String, default: "" },
-}, { timestamps: true });
-
-
-const ExcelUploadModel = mongoose.model("ExcelUpload", excelUploadSchema);
+    user: { type: mongoose.Schema.Types.ObjectId, ref: "User" }, // Added user reference
+  }, { timestamps: true });
+  
+  const ExcelUploadModel = mongoose.model("ExcelUpload", excelUploadSchema);
   
 
 export default ProductModel;
